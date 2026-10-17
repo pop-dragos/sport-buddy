@@ -1,0 +1,18 @@
+# Backend Owners
+/backend/src/main/java/ro/utcn/sportbuddy/auth/         @denis09890
+/backend/src/main/java/ro/utcn/sportbuddy/users/        @denis09890
+/backend/src/main/java/ro/utcn/sportbuddy/friends/      @denis09890
+/backend/src/main/java/ro/utcn/sportbuddy/feed/         @denis09890
+/backend/src/main/java/ro/utcn/sportbuddy/catalog/      @daniilban01
+/backend/src/main/java/ro/utcn/sportbuddy/lobbies/      @daniilban01
+/backend/src/main/java/ro/utcn/sportbuddy/payments/     @daniilban01
+/backend/src/main/java/ro/utcn/sportbuddy/ratings/      @pop-dragos
+/backend/src/main/java/ro/utcn/sportbuddy/chat/         @pop-dragos
+/backend/src/main/java/ro/utcn/sportbuddy/weather/      @pop-dragos
+/backend/src/main/java/ro/utcn/sportbuddy/dashboard/    @pop-dragos
+/backend/src/main/java/ro/utcn/sportbuddy/common/       @denis09890 @daniilban01 @pop-dragos
+
+# Frontend Owners
+/frontend/src/features/auth/       @denis09890
+/frontend/src/features/catalog/    @daniilban01
+/frontend/src/features/ratings/    @pop-dragos
