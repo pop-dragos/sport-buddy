@@ -1,0 +1,5 @@
+application-local.properties
+.idea/
+*.iml
+.vscode/
+.DS_Store
