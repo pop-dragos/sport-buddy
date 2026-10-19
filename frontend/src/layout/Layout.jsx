@@ -1,16 +1,16 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
+import Sidebar from './Sidebar'
+import Header from './Header'
 
 export default function Layout() {
   return (
     <div className="app">
-      <aside className="sidebar">
-        <b>SportBuddy</b>
-        <NavLink to="/">Acasă</NavLink>
-        <NavLink to="/agenda">Agenda mea</NavLink>
-        <NavLink to="/friends">Prieteni</NavLink>
-      </aside>
+      <Sidebar />
       <main className="content">
-        <Outlet />
+        <Header />
+        <div id="ct">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
