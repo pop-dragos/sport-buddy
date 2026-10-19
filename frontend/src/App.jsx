@@ -1,28 +1,25 @@
-import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Layout from './layout/Layout'
-
-function Home() {
-  const [status, setStatus] = useState('...')
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then((r) => r.json())
-      .then((d) => setStatus(d.status))
-      .catch(() => setStatus('eroare'))
-  }, [])
-
-  return <h1>Backend: {status}</h1>
-}
+import HomePage from './features/home/HomePage'
+import AgendaPage from './features/lobbies/AgendaPage'
+import LobbyPage from './features/lobbies/LobbyPage'
+import FriendsPage from './features/friends/FriendsPage'
+import ProfilePage from './features/profile/ProfilePage'
+import SettingsPage from './features/profile/SettingsPage'
+import LoginPage from './features/auth/LoginPage'
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/agenda" element={<AgendaPage />} />
+        <Route path="/lobbies/:id" element={<LobbyPage />} />
+        <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/profile/:username" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Route>
+    </Routes>
   )
 }
