@@ -1,12 +1,12 @@
+import { useCity } from '../catalog/useCity'
 import WeatherWidget from './WeatherWidget'
 
-// TEMPORAR
-const TEMP_CITY = { id: 1, name: 'Baia Mare' }
-
 export default function HomePage() {
+    const { city } = useCity()
+
     return (
         <div>
-            <WeatherWidget cityId={TEMP_CITY.id} cityName={TEMP_CITY.name} />
+            {city && <WeatherWidget cityId={city.id} cityName={city.name} />}
         </div>
     )
 }
