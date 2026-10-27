@@ -181,9 +181,9 @@ Postare în răspuns:
 
 Răspunsuri:
 ```json
-[ { "id": 1, "code": "football", "name": "Fotbal" } ]
+[ { "id": 1, "code": "football", "name": "Fotbal", "defaultCapacity": 10, "venueLabel": "Teren de fotbal", "indoor": false } ]
 [ { "id": 4, "name": "Satu Mare", "latitude": 47.79, "longitude": 22.88 } ]
-[ { "id": 10, "name": "Sala Polivalentă", "address": "Str. Exemplu 1", "cityId": 4, "sportId": 1 } ]
+[ { "id": 10, "name": "Teren de fotbal – Centru", "district": "Centru", "cityId": 4, "sportId": 1 } ]
 ```
 
 ### Lobbies

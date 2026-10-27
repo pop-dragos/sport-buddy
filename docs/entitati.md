@@ -172,6 +172,7 @@ Se populează din seeder cu peste 100 de orașe din România.
 | Câmp | Tip | Reguli |
 |---|---|---|
 | id | Long | PK |
+| code | String | unic, în engleză, fără diacritice: `football`, `basketball`, `tennis`, `padel`, `volleyball`, `handball`, `badminton`, `table-tennis`, `squash`, `running`, `cycling`, `swimming` (folosit de frontend pentru culori și iconițe) |
 | name | String | unic: Fotbal, Baschet, Tenis, Padel, Volei, Handbal, Badminton, Tenis de masă, Squash, Alergare, Ciclism, Înot |
 | defaultCapacity | Integer | de exemplu 10 pentru fotbal |
 | venueLabel | String | de exemplu „Teren de fotbal", „Sală de baschet" |
