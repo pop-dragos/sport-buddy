@@ -1,20 +1,23 @@
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { getSports } from '../api/catalog'
 import UserMenu from './UserMenu'
 
-const SPORTS = [
-  { name: 'Fotbal', color: '#16a34a' },
-  { name: 'Baschet', color: '#ea580c' },
-  { name: 'Tenis', color: '#ca8a04' },
-  { name: 'Padel', color: '#0891b2' },
-  { name: 'Volei', color: '#db2777' },
-  { name: 'Handbal', color: '#7c3aed' },
-  { name: 'Badminton', color: '#0d9488' },
-  { name: 'Tenis de masă', color: '#dc2626' },
-  { name: 'Squash', color: '#2563eb' },
-  { name: 'Alergare', color: '#65a30d' },
-  { name: 'Ciclism', color: '#4f46e5' },
-  { name: 'Înot', color: '#0284c7' }
-]
+// Culoarea fiecărui sport, după `code` din backend
+const SPORT_COLORS = {
+  football: '#16a34a',
+  basketball: '#ea580c',
+  tennis: '#ca8a04',
+  padel: '#0891b2',
+  volleyball: '#db2777',
+  handball: '#7c3aed',
+  badminton: '#0d9488',
+  'table-tennis': '#dc2626',
+  squash: '#2563eb',
+  running: '#65a30d',
+  cycling: '#4f46e5',
+  swimming: '#0284c7'
+}
 
 function IconHome({ color }) {
   return (
@@ -50,13 +53,13 @@ function IconFriends({ color }) {
 function SportIcon({ type, color }) {
   return (
     <svg className="ic" style={{ color }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      {type === 'Fotbal' && (
+      {type === 'football' && (
         <>
           <circle cx="12" cy="12" r="9" />
           <path d="M12 8l3.5 2.5-1.3 4h-4.4l-1.3-4z" />
         </>
       )}
-      {type === 'Baschet' && (
+      {type === 'basketball' && (
         <>
           <circle cx="12" cy="12" r="9" />
           <line x1="3" y1="12" x2="21" y2="12" />
@@ -65,20 +68,20 @@ function SportIcon({ type, color }) {
           <path d="M18.5 5.5c-4 3-4 10 0 13" />
         </>
       )}
-      {type === 'Tenis' && (
+      {type === 'tennis' && (
         <>
           <circle cx="12" cy="12" r="9" />
           <path d="M5 5c4 3 4 11 0 14" />
           <path d="M19 5c-4 3-4 11 0 14" />
         </>
       )}
-      {type === 'Padel' && (
+      {type === 'padel' && (
         <>
           <circle cx="10" cy="10" r="6" />
           <line x1="14" y1="14" x2="20" y2="20" />
         </>
       )}
-      {type === 'Volei' && (
+      {type === 'volleyball' && (
         <>
           <circle cx="12" cy="12" r="9" />
           <path d="M12 3c0 6-3 9-9 9" />
@@ -86,31 +89,31 @@ function SportIcon({ type, color }) {
           <path d="M21 12c-6 0-9 3-9 9" />
         </>
       )}
-      {type === 'Handbal' && (
+      {type === 'handball' && (
         <>
           <circle cx="12" cy="12" r="9" />
           <circle cx="12" cy="12" r="3" />
         </>
       )}
-      {type === 'Badminton' && (
+      {type === 'badminton' && (
         <>
           <path d="M8 4l-2 8h12l-2-8z" />
           <path d="M12 12v8" />
         </>
       )}
-      {type === 'Tenis de masă' && (
+      {type === 'table-tennis' && (
         <>
           <circle cx="10" cy="10" r="6" />
           <line x1="14" y1="14" x2="20" y2="20" />
         </>
       )}
-      {type === 'Squash' && (
+      {type === 'squash' && (
         <>
           <circle cx="10" cy="10" r="6" />
           <line x1="14" y1="14" x2="20" y2="20" />
         </>
       )}
-      {type === 'Alergare' && (
+      {type === 'running' && (
         <>
           <circle cx="13" cy="4" r="2" />
           <path d="M7 21l3-4 2 1 3 4" />
@@ -118,14 +121,14 @@ function SportIcon({ type, color }) {
           <path d="M12 8l-3 2 1 3h4l2-3" />
         </>
       )}
-      {type === 'Ciclism' && (
+      {type === 'cycling' && (
         <>
           <circle cx="5.5" cy="17.5" r="3.5" />
           <circle cx="18.5" cy="17.5" r="3.5" />
           <path d="M12 17.5l-3-6 4-3 3.5 4H20" />
         </>
       )}
-      {type === 'Înot' && (
+      {type === 'swimming' && (
         <>
           <path d="M2 18c2.5 0 2.5-1.5 5-1.5s2.5 1.5 5 1.5 2.5-1.5 5-1.5 2.5 1.5 5 1.5" />
           <path d="M2 14c2.5 0 2.5-1.5 5-1.5s2.5 1.5 5 1.5 2.5-1.5 5-1.5 2.5 1.5 5 1.5" />
@@ -136,6 +139,15 @@ function SportIcon({ type, color }) {
 }
 
 export default function Sidebar() {
+  const [sports, setSports] = useState([])
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    getSports()
+      .then(setSports)
+      .catch(() => setError(true))
+  }, [])
+
   return (
     <aside className="sidebar">
       <div className="logo">
@@ -160,9 +172,11 @@ export default function Sidebar() {
 
         <div className="mu" style={{ padding: '10px 10px 4px' }}>SPORTURI</div>
 
-        {SPORTS.map((s) => (
-          <button key={s.name} className="si" onClick={() => alert(`Ai selectat sportul ${s.name}`)}>
-            <SportIcon type={s.name} color={s.color} />
+        {error && <div className="mu" style={{ padding: '4px 10px' }}>Sporturile nu sunt disponibile.</div>}
+
+        {sports.map((s) => (
+          <button key={s.id} className="si" onClick={() => alert(`Ai selectat sportul ${s.name}`)}>
+            <SportIcon type={s.code} color={SPORT_COLORS[s.code]} />
             <span>{s.name}</span>
           </button>
         ))}
@@ -171,4 +185,4 @@ export default function Sidebar() {
       <UserMenu />
     </aside>
   )
-}
+}
