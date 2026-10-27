@@ -37,6 +37,10 @@ public class User {
 
     private Long cityId;
 
+    // false după ștergerea contului: datele sunt anonimizate, dar rândul rămâne pentru istoricul meciurilor
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean active = true;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -127,6 +131,14 @@ public class User {
 
     public void setCityId(Long cityId) {
         this.cityId = cityId;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public Instant getCreatedAt() {

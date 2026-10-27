@@ -10,7 +10,7 @@ export default function UserMenu() {
     <div className="um">
       {showPop && (
         <div id="pop">
-          <Link to={`/profile/${user.username}`} onClick={() => setShowPop(false)}>👤 Profilul meu</Link>
+          <Link to={`/profile/${user.id}`} onClick={() => setShowPop(false)}>👤 Profilul meu</Link>
           <Link to="/settings" onClick={() => setShowPop(false)}>⚙️ Setări</Link>
           <button onClick={() => { setShowPop(false); logout() }}>
             ↩ Ieși din cont

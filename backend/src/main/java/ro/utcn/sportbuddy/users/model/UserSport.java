@@ -33,4 +33,5 @@ public class UserSport {
     public Long getUserId() { return userId; }
     public Long getSportId() { return sportId; }
     public SportLevel getDeclaredLevel() { return declaredLevel; }
+    public void setDeclaredLevel(SportLevel declaredLevel) { this.declaredLevel = declaredLevel; }
 }

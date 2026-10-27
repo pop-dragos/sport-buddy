@@ -19,7 +19,7 @@ export default function App() {
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/lobbies/:id" element={<LobbyPage />} />
           <Route path="/friends" element={<FriendsPage />} />
-          <Route path="/profile/:username" element={<ProfilePage />} />
+          <Route path="/profile/:id" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Route>

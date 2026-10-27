@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
 import * as authApi from '../../api/auth'
 import { clearToken, getToken, saveToken, SESSION_EXPIRED } from '../../api/session'
+import { getSettings } from '../../api/users'
+import { applyTheme } from '../../shared/theme'
 import { AuthContext } from './useAuth'
+
+// Tema aleasă în setări se aplică la fiecare conectare, indiferent de dispozitiv.
+function loadTheme() {
+  getSettings().then((s) => applyTheme(s.theme)).catch(() => {})
+}
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -16,6 +23,7 @@ export default function AuthProvider({ children }) {
         if (cancelled) return
         setUser(me)
         setStatus('authed')
+        loadTheme()
       })
       .catch(() => {
         if (!cancelled) setStatus('guest')
@@ -36,6 +44,7 @@ export default function AuthProvider({ children }) {
     saveToken(res.token, remember)
     setUser(res.user)
     setStatus('authed')
+    loadTheme()
   }
 
   async function login(identifier, password, remember) {
@@ -60,7 +69,7 @@ export default function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, status, login, register, loginWithProvider, logout }}>
+    <AuthContext.Provider value={{ user, status, login, register, loginWithProvider, logout, updateUser: setUser }}>
       {children}
     </AuthContext.Provider>
   )
