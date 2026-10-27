@@ -229,7 +229,7 @@ Răspunsuri:
 ```
 - `alreadyPlaying` = câți jucători sunt deja, **cu organizatorul** (minim 1). Serverul salvează `broughtPlayers = alreadyPlaying - 1`.
 - Orașul se deduce din teren.
-- Reguli: `dateTime` cel puțin 3 ore în viitor; ora între 0 și 23, minute multiplu de 15; `2 <= maxPlayers`; `1 <= minPlayers <= maxPlayers`; `1 <= alreadyPlaying <= maxPlayers`; `fieldCost >= 0`; terenul trebuie să fie pentru sportul ales.
+- Reguli: `dateTime` cel puțin 3 ore în viitor; ora între 0 și 23, minute multiplu de 15; `2 <= maxPlayers`; `2 <= minPlayers <= maxPlayers`; `1 <= alreadyPlaying <= maxPlayers`; `fieldCost >= 0`; terenul trebuie să fie pentru sportul ales.
 - Răspuns `201`: `LobbyDetails`. Erori: `400 VALIDATION_ERROR`, `400 INVALID_DATE_TIME`, `400 SPORT_FIELD_MISMATCH`.
 
 `LobbyDetails`:
@@ -237,7 +237,7 @@ Răspunsuri:
 {
   "id": 55,
   "sport": { "id": 1, "code": "football", "name": "Fotbal" },
-  "field": { "id": 10, "name": "Sala Polivalentă", "address": "Str. Exemplu 1" },
+  "field": { "id": 10, "name": "Teren de fotbal – Centru", "district": "Centru" },
   "city": { "id": 4, "name": "Satu Mare" },
   "dateTime": "2026-10-24T18:00:00",
   "status": "OPEN",
@@ -258,7 +258,7 @@ Răspunsuri:
 }
 ```
 - `estimatedPrice` și `priceAtFull` se completează doar cât e `OPEN`; `finalPrice` doar după confirmare. Cu `fieldCost = 0` toate trei sunt goale (lobby gratuit).
-- `participants` conține doar jucătorii cu cont și statusul `ACCEPTED`. Jucătorii fără cont apar prin `broughtPlayers` (interfața afișează „Adus de organizator, fără cont"). `rating`, `reviewCount`, `reliabilityPercent` vin de la `RatingService` (C) și sunt goale pentru utilizatorii noi. `paymentMethod` este `ONLINE` sau `CASH` după confirmare, altfel gol.
+- `participants` conține doar jucătorii cu cont și statusul `ACCEPTED`. Jucătorii fără cont apar prin `broughtPlayers` (interfața afișează „Adus de organizator, fără cont"). `rating`, `reviewCount`, `reliabilityPercent` vin de la `RatingService` (C) și sunt goale pentru utilizatorii noi. `paymentMethod` este `ONLINE` sau `ON_SITE` după confirmare, altfel gol.
 - `pendingRequests` este completat doar pentru organizator: `{ "requestId": 9, "userId": 21, "username": "...", "rating": 3.9, "reliabilityPercent": 92 }`.
 - `minNotReached` este true dacă termenul a trecut și minimul nu e atins. `joinClosed` este true când nu se mai pot trimite cereri (lobby plin, confirmat, anulat sau termen depășit).
 
