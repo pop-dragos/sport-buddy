@@ -1,0 +1,38 @@
+.city-search {
+  position: relative;
+  width: 190px;
+}
+
+.city-search input {
+  width: 100%;
+}
+
+.city-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px #0003;
+  z-index: 20;
+}
+
+.city-list li {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.city-list li.on {
+  background: var(--sf);
+}
+
+.city-list li.empty {
+  color: var(--mu);
+  cursor: default;
+}

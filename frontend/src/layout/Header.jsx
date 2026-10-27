@@ -1,13 +1,7 @@
-import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-
-const CITIES = [
-  'Baia Mare', 'Cluj-Napoca', 'București', 'Satu Mare', 'Oradea', 'Timișoara', 
-  'Iași', 'Brașov', 'Constanța', 'Sibiu', 'Craiova', 'Târgu Mureș'
-]
+import CitySearch from '../features/catalog/CitySearch'
 
 export default function Header() {
-  const [selectedCity, setSelectedCity] = useState('Baia Mare')
   const location = useLocation()
 
   const getPageTitle = () => {
@@ -27,18 +21,7 @@ export default function Header() {
     <header>
       <h2>{getPageTitle()}</h2>
       <div className="r">
-        <input 
-          list="cl" 
-          style={{ width: '190px' }} 
-          value={selectedCity} 
-          onChange={(e) => setSelectedCity(e.target.value)}
-          placeholder="Caută oraș" 
-        />
-        <datalist id="cl">
-          {CITIES.map((c) => (
-            <option key={c} value={c} />
-          ))}
-        </datalist>
+        <CitySearch />
         <button className="b plus" title="Creează lobby" onClick={() => alert('Creează lobby')}>+</button>
       </div>
     </header>
