@@ -1,2 +1,3 @@
 spring.datasource.username=postgres
-spring.datasource.password=QpAlZm10!
+spring.datasource.password=parola_ta_locala
+app.jwt.secret=schimba-cu-un-secret-lung-de-minim-32-de-caractere
