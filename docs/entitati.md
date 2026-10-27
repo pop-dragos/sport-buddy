@@ -197,7 +197,7 @@ Se populează din seeder cu peste 100 de orașe din România.
 | creatorId | Long | organizatorul (un `User`) |
 | sportId, cityId | Long | |
 | fieldId | Long | FK `Field` |
-| startAt | LocalDateTime | data și ora meciului; nu poate fi în trecut |
+| startAt | LocalDateTime | data și ora meciului; cel puțin 3 ore în viitor, minutele multiplu de 15 |
 | capacity | Integer | numărul total de locuri, minim 2 |
 | minPlayers | Integer | minim 2, maxim `capacity` |
 | fieldCost | BigDecimal | costul terenului în RON; 0 = gratuit |
