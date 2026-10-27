@@ -68,6 +68,7 @@ erDiagram
 | photoPath | String | opțional; poza se salvează în folderul `uploads/` (în `.gitignore`) |
 | bio | String | opțional, maxim 300 de caractere |
 | cityId | Long | orașul implicit (din `City`, modulul B) |
+| active | boolean | implicit `true`; devine `false` când utilizatorul își șterge contul (datele personale se anonimizează, rândul rămâne pentru istoric) |
 | createdAt | Instant | |
 
 Obligatorii la înregistrare: `fullName`, `email`, parolă (pentru `LOCAL`), `age` și cel puțin un sport în `UserSport`. Restul se poate completa ulterior din setări.
