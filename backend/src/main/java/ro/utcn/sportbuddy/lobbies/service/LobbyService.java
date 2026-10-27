@@ -8,8 +8,10 @@ import ro.utcn.sportbuddy.catalog.dto.FieldDto;
 import ro.utcn.sportbuddy.catalog.dto.SportDto;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.lobbies.dto.CalendarDays;
 import ro.utcn.sportbuddy.lobbies.dto.CreateLobbyRequest;
 import ro.utcn.sportbuddy.lobbies.dto.LobbyDetails;
+import ro.utcn.sportbuddy.lobbies.dto.LobbySummary;
 import ro.utcn.sportbuddy.lobbies.model.Lobby;
 import ro.utcn.sportbuddy.lobbies.model.LobbyPlayer;
 import ro.utcn.sportbuddy.lobbies.model.LobbyStatus;
@@ -21,8 +23,11 @@ import ro.utcn.sportbuddy.ratings.service.RatingService;
 import ro.utcn.sportbuddy.users.service.UserService;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,6 +116,63 @@ public class LobbyService {
 
     // ---------- citire ----------
 
+    // Lobby-urile dintr-o zi, pentru lista de sub calendar. Cele anulate nu apar.
+    public List<LobbySummary> listForDay(Long cityId, Long sportId, LocalDate date, Long userId) {
+        return findVisible(cityId, sportId, date.atStartOfDay(), date.plusDays(1).atStartOfDay()).stream()
+                .map(lobby -> toSummary(lobby, userId))
+                .toList();
+    }
+
+    // Zilele din lună care au cel puțin un lobby; month are forma 2026-10.
+    public CalendarDays calendar(Long cityId, Long sportId, String month) {
+        YearMonth ym;
+        try {
+            ym = YearMonth.parse(month);
+        } catch (DateTimeParseException e) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Date invalide.",
+                    Map.of("month", "Luna trebuie să aibă forma 2026-10."));
+        }
+        List<LocalDate> days = findVisible(cityId, sportId,
+                ym.atDay(1).atStartOfDay(), ym.plusMonths(1).atDay(1).atStartOfDay()).stream()
+                .map(lobby -> lobby.getStartAt().toLocalDate())
+                .distinct()
+                .toList();
+        return new CalendarDays(days);
+    }
+
+    private List<Lobby> findVisible(Long cityId, Long sportId, LocalDateTime from, LocalDateTime to) {
+        return lobbyRepository
+                .findByCityIdAndSportIdAndStartAtGreaterThanEqualAndStartAtLessThanOrderByStartAtAsc(
+                        cityId, sportId, from, to).stream()
+                .filter(lobby -> lobby.getStatus() != LobbyStatus.CANCELLED)
+                .toList();
+    }
+
+    private LobbySummary toSummary(Lobby lobby, Long userId) {
+        SportDto sport = catalogService.findSport(lobby.getSportId()).orElseThrow();
+        FieldDto field = catalogService.findField(lobby.getFieldId()).orElseThrow();
+        CityDto city = catalogService.findCity(lobby.getCityId()).orElseThrow();
+
+        List<LobbyPlayer> joined = lobbyPlayerRepository.findByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED);
+        int occupied = priceCalculator.occupiedSlots(lobby.getGuestCount(), joined.size());
+        List<Double> ratings = joined.stream()
+                .map(p -> ratingService.getStats(p.getUserId()).average())
+                .toList();
+
+        return new LobbySummary(
+                lobby.getId(),
+                sport.id(), sport.code(), sport.name(),
+                field.id(), field.name(),
+                city.id(), city.name(),
+                lobby.getStartAt(),
+                lobby.getStatus().name(),
+                lobby.getCapacity(),
+                occupied,
+                Math.max(0, lobby.getCapacity() - occupied),
+                averageRating(ratings),
+                myState(lobby, userId));
+    }
+
     public LobbyDetails getDetails(Long lobbyId, Long userId) {
         Lobby lobby = lobbyRepository.findById(lobbyId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Lobby-ul nu există."));
@@ -157,7 +219,7 @@ public class LobbyService {
                 lobby.getGuestCount(),
                 occupied,
                 freeSlots,
-                averageRating(participants),
+                averageRating(participants.stream().map(LobbyDetails.Participant::rating).toList()),
                 lobby.getFieldCost().intValue(),
                 lobby.getLockDeadline(),
                 estimatedPrice,
@@ -185,9 +247,8 @@ public class LobbyService {
     }
 
     // Media ratingurilor participanților care au deja rating, cu o zecimală.
-    private Double averageRating(List<LobbyDetails.Participant> participants) {
-        OptionalDouble avg = participants.stream()
-                .map(LobbyDetails.Participant::rating)
+    private Double averageRating(List<Double> ratings) {
+        OptionalDouble avg = ratings.stream()
                 .filter(Objects::nonNull)
                 .mapToDouble(Double::doubleValue)
                 .average();
