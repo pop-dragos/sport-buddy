@@ -323,3 +323,112 @@ header h2 {
   .si span, .logo span, .um .nm { display: none; }
   .si { justify-content: center; }
 }
+
+/* ---------- conectare și cont nou ---------- */
+
+.login-page {
+  min-height: 100%;
+  display: flex;
+  overflow-y: auto;
+  padding: 16px;
+  background:
+    radial-gradient(900px 520px at 12% 8%, rgba(37, 99, 235, 0.22), transparent 60%),
+    radial-gradient(800px 520px at 92% 92%, rgba(234, 88, 12, 0.2), transparent 60%),
+    var(--bg);
+}
+
+.lg {
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+
+.mk {
+  display: inline-flex;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+}
+
+.lb2 {
+  font-weight: 600;
+}
+
+.pw {
+  position: relative;
+}
+
+.pw input {
+  padding-right: 42px;
+}
+
+.eye {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: 0;
+  padding: 6px;
+  color: var(--mu);
+}
+
+.sep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--mu);
+  font-size: 13px;
+}
+
+.sep::before,
+.sep::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--bd);
+}
+
+.soc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  padding: 9px;
+}
+
+.soc:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.al {
+  color: #2563eb;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+}
+
+.err {
+  font-weight: 600;
+}
