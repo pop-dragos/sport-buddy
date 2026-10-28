@@ -2,6 +2,7 @@ package ro.utcn.sportbuddy.users.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,6 +36,10 @@ class UserServiceTest {
     private UserSettingsRepository settings;
     private CatalogService catalog;
     private PasswordEncoder encoder;
+    private AvatarStorage avatars;
+
+    @TempDir
+    java.nio.file.Path uploads;
     private UserService service;
 
     private User ana;
@@ -46,7 +51,8 @@ class UserServiceTest {
         settings = mock(UserSettingsRepository.class);
         catalog = mock(CatalogService.class);
         encoder = new BCryptPasswordEncoder();
-        service = new UserService(users, userSports, settings, encoder, catalog);
+        avatars = new AvatarStorage(uploads.toString());
+        service = new UserService(users, userSports, settings, encoder, catalog, avatars);
 
         ana = user(1L, "ana", "ana@demo.ro");
         when(users.findById(1L)).thenReturn(Optional.of(ana));
@@ -308,5 +314,84 @@ class UserServiceTest {
 
         assertEquals(75, after.profileCompletion().percent());
         assertEquals(List.of("avatar"), after.profileCompletion().missing());
+    }
+
+    // ---------- poză de profil ----------
+
+    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 13, 10, 26, 10, 0, 0};
+    private static final byte[] JPG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 0};
+
+    @Test
+    void avatarIsSavedAndReplacingDeletesTheOldFile() throws Exception {
+        UserMe first = service.updateAvatar(1L, PNG);
+        String firstName = ana.getPhotoPath();
+        assertTrue(firstName.matches("1-[0-9a-f]{32}\\.png"));
+        assertEquals("/api/uploads/" + firstName, first.avatarUrl());
+        assertTrue(java.nio.file.Files.exists(uploads.resolve(firstName)));
+
+        service.updateAvatar(1L, JPG);
+
+        assertTrue(ana.getPhotoPath().endsWith(".jpg"));
+        assertFalse(java.nio.file.Files.exists(uploads.resolve(firstName)));
+        assertTrue(service.findAvatarFile(ana.getPhotoPath()).isPresent());
+    }
+
+    @Test
+    void avatarRejectsFilesThatAreNotImages() {
+        byte[] text = "nu sunt o imagine".getBytes();
+        ApiException e = assertThrows(ApiException.class, () -> service.updateAvatar(1L, text));
+        assertTrue(e.getFields().containsKey("file"));
+        assertNull(ana.getPhotoPath());
+    }
+
+    @Test
+    void avatarRejectsFilesOverTwoMegabytes() {
+        byte[] big = new byte[UserService.MAX_AVATAR_BYTES + 1];
+        System.arraycopy(PNG, 0, big, 0, PNG.length);
+        ApiException e = assertThrows(ApiException.class, () -> service.updateAvatar(1L, big));
+        assertEquals("Imaginea poate avea maximum 2 MB.", e.getFields().get("file"));
+    }
+
+    @Test
+    void avatarRejectsEmptyFile() {
+        assertThrows(ApiException.class, () -> service.updateAvatar(1L, new byte[0]));
+    }
+
+    @Test
+    void removeAvatarDeletesFileAndCountsAsMissing() {
+        service.updateAvatar(1L, PNG);
+        String name = ana.getPhotoPath();
+
+        UserMe me = service.removeAvatar(1L);
+
+        assertNull(me.avatarUrl());
+        assertTrue(me.profileCompletion().missing().contains("avatar"));
+        assertFalse(java.nio.file.Files.exists(uploads.resolve(name)));
+    }
+
+    @Test
+    void deleteMeAlsoDeletesAvatarFile() {
+        service.updateAvatar(1L, PNG);
+        String name = ana.getPhotoPath();
+
+        service.deleteMe(1L);
+
+        assertFalse(java.nio.file.Files.exists(uploads.resolve(name)));
+    }
+
+    @Test
+    void avatarFileLookupRefusesPathTricks() {
+        assertTrue(service.findAvatarFile("../application.properties").isEmpty());
+        assertTrue(service.findAvatarFile("..%2F..%2Fpom.xml").isEmpty());
+        assertTrue(service.findAvatarFile("1-abc.png").isEmpty());
+    }
+
+    @Test
+    void imageTypeIsDetectedFromContent() {
+        assertEquals(Optional.of("png"), UserService.imageExtension(PNG));
+        assertEquals(Optional.of("jpg"), UserService.imageExtension(JPG));
+        assertEquals(Optional.of("gif"), UserService.imageExtension("GIF89a".getBytes()));
+        assertEquals(Optional.of("webp"), UserService.imageExtension("RIFF0000WEBPVP8 ".getBytes()));
+        assertEquals(Optional.empty(), UserService.imageExtension("RIFF0000WAVE".getBytes()));
     }
 }

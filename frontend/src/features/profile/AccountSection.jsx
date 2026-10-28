@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { errorMessage } from '../../api/http'
 import { updateMe, updateSports } from '../../api/users'
 import { useAuth } from '../auth/useAuth'
+import AvatarField from './AvatarField'
 import ChangePasswordModal from './ChangePasswordModal'
 import DeleteAccountModal from './DeleteAccountModal'
 import { LEVELS } from './levels'
@@ -76,6 +77,7 @@ export default function AccountSection({ sports, cities }) {
           <label>Vârstă *</label>
           <input type="number" min={MIN_AGE} max={MAX_AGE} value={age} onChange={(e) => setAge(e.target.value)} />
         </div>
+        <AvatarField />
         <div className="f">
           <label>Oraș implicit</label>
           <select value={cityId} onChange={(e) => setCityId(e.target.value)}>

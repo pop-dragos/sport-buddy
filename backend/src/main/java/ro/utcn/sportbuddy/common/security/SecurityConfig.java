@@ -31,7 +31,11 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/api/auth/**", "/api/health").permitAll()
+                // pagina internă de eroare a Spring: fără ea, un 404 sau 405 ar ajunge la client ca 401
+                .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
+                // pozele de profil: <img> nu poate trimite token-ul
+                .requestMatchers(HttpMethod.GET, "/api/uploads/**").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e
                 .authenticationEntryPoint((req, res, ex) ->

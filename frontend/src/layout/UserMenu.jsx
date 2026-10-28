@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../features/auth/useAuth'
+import Avatar from '../shared/Avatar'
 
 export default function UserMenu() {
   const [showPop, setShowPop] = useState(false)
@@ -19,7 +20,7 @@ export default function UserMenu() {
       )}
 
       <button className="si" onClick={() => setShowPop(!showPop)}>
-        <span className="av">{user.fullName.charAt(0).toUpperCase()}</span>
+        <Avatar name={user.fullName} url={user.avatarUrl} />
         <span className="nm">{user.username}</span>
       </button>
     </div>
