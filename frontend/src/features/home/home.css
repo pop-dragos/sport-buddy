@@ -1,0 +1,58 @@
+/* Prima pagină: widget-urile în stânga, comunitatea în dreapta (ca în prototip) */
+.home-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+    .home-cols {
+        grid-template-columns: 1fr;
+    }
+}
+
+.home-greeting {
+    margin: 0 0 12px;
+}
+
+.home-bar {
+    height: 6px;
+    background: var(--bd);
+    border-radius: 9px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.home-bar i {
+    display: block;
+    height: 100%;
+    background: #16a34a;
+}
+
+.home-big {
+    display: block;
+    font-size: 16px;
+}
+
+.home-action {
+    margin-top: 8px;
+}
+
+.home-empty {
+    margin: 6px 0;
+}
+
+.home-title {
+    margin-bottom: 4px;
+}
+
+.home-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: inherit;
+    text-decoration: none;
+}
