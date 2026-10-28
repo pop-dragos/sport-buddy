@@ -3,3 +3,5 @@ application-local.properties
 *.iml
 .vscode/
 .DS_Store
+# pozele de profil încărcate local
+uploads/

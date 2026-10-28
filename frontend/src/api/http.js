@@ -13,11 +13,13 @@ export class ApiError extends Error {
 export async function http(path, options = {}) {
   // endpoint-urile /auth nu primesc token: un token vechi nu trebuie să încurce conectarea
   const token = path.startsWith('/auth/') ? null : getToken()
+  // la FormData (încărcare de fișiere) browserul pune singur Content-Type, cu separatorul corect
+  const isForm = options.body instanceof FormData
 
   const res = await fetch('/api' + path, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(!isForm && { 'Content-Type': 'application/json' }),
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers
     },

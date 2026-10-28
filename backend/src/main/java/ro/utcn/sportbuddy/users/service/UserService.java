@@ -27,15 +27,17 @@ public class UserService {
     private final UserSettingsRepository userSettingsRepository;
     private final PasswordEncoder passwordEncoder;
     private final CatalogService catalogService;
+    private final AvatarStorage avatarStorage;
 
     public UserService(UserRepository userRepository, UserSportRepository userSportRepository,
                        UserSettingsRepository userSettingsRepository, PasswordEncoder passwordEncoder,
-                       CatalogService catalogService) {
+                       CatalogService catalogService, AvatarStorage avatarStorage) {
         this.userRepository = userRepository;
         this.userSportRepository = userSportRepository;
         this.userSettingsRepository = userSettingsRepository;
         this.passwordEncoder = passwordEncoder;
         this.catalogService = catalogService;
+        this.avatarStorage = avatarStorage;
     }
 
     // ---------- citire ----------
@@ -166,11 +168,63 @@ public class UserService {
         u.setEmail("sters-" + id + "@sters.invalid");
         u.setPasswordHash(null);
         u.setPhone(null);
+        avatarStorage.delete(u.getPhotoPath());
         u.setPhotoPath(null);
         u.setBio(null);
         u.setCityId(null);
         userSportRepository.deleteByUserId(id);
         userSettingsRepository.deleteById(id);
+    }
+
+    // ---------- poză de profil ----------
+
+    public static final int MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
+    // Tipul se află din primii octeți ai fișierului, nu din numele sau Content-Type-ul trimis de browser.
+    @Transactional
+    public UserMe updateAvatar(Long id, byte[] content) {
+        User u = getEntity(id);
+        if (content == null || content.length == 0) {
+            throw invalid("file", "Alege o imagine.");
+        }
+        if (content.length > MAX_AVATAR_BYTES) {
+            throw invalid("file", "Imaginea poate avea maximum 2 MB.");
+        }
+        String extension = imageExtension(content)
+                .orElseThrow(() -> invalid("file", "Sunt acceptate doar imagini PNG, JPG, WebP sau GIF."));
+
+        String previous = u.getPhotoPath();
+        u.setPhotoPath(avatarStorage.save(id, content, extension));
+        avatarStorage.delete(previous);
+        return toMe(u);
+    }
+
+    @Transactional
+    public UserMe removeAvatar(Long id) {
+        User u = getEntity(id);
+        avatarStorage.delete(u.getPhotoPath());
+        u.setPhotoPath(null);
+        return toMe(u);
+    }
+
+    public Optional<java.nio.file.Path> findAvatarFile(String name) {
+        return avatarStorage.find(name);
+    }
+
+    static Optional<String> imageExtension(byte[] b) {
+        if (startsWith(b, 0, 0x89, 'P', 'N', 'G')) return Optional.of("png");
+        if (startsWith(b, 0, 0xFF, 0xD8, 0xFF)) return Optional.of("jpg");
+        if (startsWith(b, 0, 'G', 'I', 'F', '8')) return Optional.of("gif");
+        if (startsWith(b, 0, 'R', 'I', 'F', 'F') && startsWith(b, 8, 'W', 'E', 'B', 'P')) return Optional.of("webp");
+        return Optional.empty();
+    }
+
+    private static boolean startsWith(byte[] b, int offset, int... expected) {
+        if (b.length < offset + expected.length) return false;
+        for (int i = 0; i < expected.length; i++) {
+            if ((b[offset + i] & 0xFF) != expected[i]) return false;
+        }
+        return true;
     }
 
     @Transactional(readOnly = true)

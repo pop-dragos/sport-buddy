@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
 import { getProfile } from '../../api/users'
+import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
 import { levelLabel } from './levels'
 import { useCatalog } from './useCatalog'
@@ -39,9 +40,7 @@ function ProfileView({ id }) {
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
       <div className="card">
         <div className="r" style={{ gap: 16, flexWrap: 'nowrap' }}>
-          <span className="av" style={{ width: 64, height: 64, fontSize: 26 }}>
-            {profile.fullName.charAt(0).toUpperCase()}
-          </span>
+          <Avatar name={profile.fullName} url={profile.avatarUrl} size={64} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <b style={{ fontSize: 18 }}>{profile.fullName}</b>
             <div className="mu">

@@ -14,6 +14,14 @@ export const changePassword = (currentPassword, newPassword) =>
 
 export const deleteMe = () => send('DELETE', '/users/me')
 
+export function uploadAvatar(file) {
+  const body = new FormData()
+  body.append('file', file)
+  return http('/users/me/avatar', { method: 'POST', body })
+}
+
+export const deleteAvatar = () => send('DELETE', '/users/me/avatar')
+
 export const getSettings = () => http('/users/me/settings')
 
 export const updateSettings = (settings) => send('PUT', '/users/me/settings', settings)
