@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
+import { getFriends } from '../../api/friends'
 import { getProfile } from '../../api/users'
 import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
+import FriendButton from '../friends/FriendButton'
 import { levelLabel } from './levels'
 import { useCatalog } from './useCatalog'
 
@@ -17,14 +19,18 @@ function ProfileView({ id }) {
   const isMe = String(me.id) === id
 
   const [other, setOther] = useState(null)
+  const [friendCount, setFriendCount] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (isMe) return
     let cancelled = false
-    getProfile(id)
-      .then((p) => { if (!cancelled) setOther(p) })
-      .catch((e) => { if (!cancelled) setError(errorMessage(e)) })
+    if (isMe) {
+      getFriends().then((f) => { if (!cancelled) setFriendCount(f.length) }).catch(() => {})
+    } else {
+      getProfile(id)
+        .then((p) => { if (!cancelled) setOther(p) })
+        .catch((e) => { if (!cancelled) setError(errorMessage(e)) })
+    }
     return () => { cancelled = true }
   }, [id, isMe])
 
@@ -32,6 +38,24 @@ function ProfileView({ id }) {
 
   const profile = isMe ? { ...me, memberSince: me.createdAt } : other
   if (!profile) return null
+
+  // profil vizibil doar prietenilor: serverul trimite doar numele și poza
+  if (profile.restricted) {
+    return (
+      <div style={{ maxWidth: 960, margin: '0 auto' }}>
+        <div className="card">
+          <div className="r" style={{ gap: 16, flexWrap: 'nowrap' }}>
+            <Avatar name={profile.fullName} url={profile.avatarUrl} size={64} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <b style={{ fontSize: 18 }}>{profile.fullName}</b>
+              <div className="mu">Profilul este vizibil doar prietenilor.</div>
+            </div>
+          </div>
+          <FriendButton profile={profile} />
+        </div>
+      </div>
+    )
+  }
 
   const cityName = cities.find((c) => c.id === profile.cityId)?.name
   const sportName = (sportId) => sports.find((s) => s.id === sportId)?.name ?? `Sport ${sportId}`
@@ -54,15 +78,21 @@ function ProfileView({ id }) {
           {profile.description || (isMe ? <span className="mu">Nu ai adăugat o descriere.</span> : null)}
         </p>
 
-        {isMe && (
+        {isMe ? (
           <div className="r" style={{ marginTop: 12 }}>
             <Link to="/settings" className="b o" style={{ textDecoration: 'none' }}>Editează profilul</Link>
           </div>
+        ) : (
+          <FriendButton profile={profile} />
         )}
       </div>
 
       <div className="g" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        {[['–', 'Meciuri'], ['–', 'Rating'], ['–', isMe ? 'Prieteni' : 'Meciuri împreună']].map(([value, label]) => (
+        {[
+          ['–', 'Meciuri'],
+          ['–', 'Rating'],
+          isMe ? [friendCount ?? '–', 'Prieteni'] : ['–', 'Meciuri împreună']
+        ].map(([value, label]) => (
           <div className="card" key={label} style={{ textAlign: 'center' }}>
             <b style={{ fontSize: 20 }}>{value}</b>
             <div className="mu">{label}</div>
