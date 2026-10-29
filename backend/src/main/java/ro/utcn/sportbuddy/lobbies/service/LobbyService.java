@@ -21,6 +21,7 @@ import ro.utcn.sportbuddy.lobbies.dto.JoinRequestResult;
 import ro.utcn.sportbuddy.lobbies.dto.LeaveResult;
 import ro.utcn.sportbuddy.lobbies.dto.LobbyDetails;
 import ro.utcn.sportbuddy.lobbies.dto.LobbySummary;
+import ro.utcn.sportbuddy.lobbies.dto.TodoCounts;
 import ro.utcn.sportbuddy.lobbies.model.JoinRequest;
 import ro.utcn.sportbuddy.lobbies.model.JoinRequestStatus;
 import ro.utcn.sportbuddy.lobbies.model.Lobby;
@@ -43,6 +44,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -433,6 +435,7 @@ public class LobbyService {
         SportDto sport = catalogService.findSport(lobby.getSportId()).orElseThrow();
         FieldDto field = catalogService.findField(lobby.getFieldId()).orElseThrow();
         CityDto city = catalogService.findCity(lobby.getCityId()).orElseThrow();
+        boolean isHost = lobby.getCreatorId().equals(userId);
 
         List<LobbyPlayer> joined = lobbyPlayerRepository.findByLobbyIdAndStatusIn(lobby.getId(), ACTIVE);
         int occupied = priceCalculator.occupiedSlots(lobby.getGuestCount(), joined.size());
@@ -451,7 +454,57 @@ public class LobbyService {
                 occupied,
                 Math.max(0, lobby.getCapacity() - occupied),
                 averageRating(ratings),
-                myState(lobby, userId));
+                myState(lobby, userId),
+                isHost,
+                isHost ? (int) joinRequestRepository.countByLobbyIdAndStatus(lobby.getId(), JoinRequestStatus.PENDING) : 0);
+    }
+
+    // ---------- agenda ----------
+
+    // UPCOMING: meciurile viitoare în care joc; CREATED: create de mine; REQUESTS: cererile mele
+    // în așteptare; FINISHED: meciurile încheiate la care am participat.
+    public List<LobbySummary> myLobbies(Long userId, String filter) {
+        List<Lobby> lobbies = switch (filter.toUpperCase()) {
+            case "UPCOMING" -> lobbiesIPlay(userId).stream()
+                    .filter(l -> l.getStatus() == LobbyStatus.OPEN || l.getStatus() == LobbyStatus.LOCKED)
+                    .sorted(Comparator.comparing(Lobby::getStartAt))
+                    .toList();
+            case "CREATED" -> lobbyRepository.findByCreatorIdOrderByStartAtDesc(userId);
+            case "REQUESTS" -> lobbyRepository.findAllById(
+                            joinRequestRepository.findByUserIdAndStatus(userId, JoinRequestStatus.PENDING).stream()
+                                    .map(JoinRequest::getLobbyId).toList()).stream()
+                    .sorted(Comparator.comparing(Lobby::getStartAt))
+                    .toList();
+            case "FINISHED" -> lobbiesIPlay(userId).stream()
+                    .filter(l -> l.getStatus() == LobbyStatus.FINISHED)
+                    .sorted(Comparator.comparing(Lobby::getStartAt).reversed())
+                    .toList();
+            default -> throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Date invalide.",
+                    Map.of("filter", "Filtrul poate fi UPCOMING, CREATED, REQUESTS sau FINISHED."));
+        };
+        return lobbies.stream().map(lobby -> toSummary(lobby, userId)).toList();
+    }
+
+    public TodoCounts todo(Long userId) {
+        List<Lobby> created = lobbyRepository.findByCreatorIdOrderByStartAtDesc(userId);
+        int pendingRequests = created.stream()
+                .filter(l -> l.getStatus() == LobbyStatus.OPEN)
+                .mapToInt(l -> (int) joinRequestRepository.countByLobbyIdAndStatus(l.getId(), JoinRequestStatus.PENDING))
+                .sum();
+        int attendanceToSave = (int) created.stream()
+                .filter(l -> l.getStatus() == LobbyStatus.FINISHED && !l.isAttendanceSaved())
+                .count();
+        int reviewsToGive = 0;  // vine de la RatingService (C), când apare metoda pentru review-urile de dat
+        int paymentsToMake = 0; // vine odată cu modulul payments
+        return new TodoCounts(pendingRequests, attendanceToSave, reviewsToGive, paymentsToMake,
+                pendingRequests + attendanceToSave + reviewsToGive + paymentsToMake);
+    }
+
+    private List<Lobby> lobbiesIPlay(Long userId) {
+        List<Long> ids = lobbyPlayerRepository.findByUserIdAndStatusIn(userId, ACTIVE).stream()
+                .map(LobbyPlayer::getLobbyId)
+                .toList();
+        return lobbyRepository.findAllById(ids);
     }
 
     public LobbyDetails getDetails(Long lobbyId, Long userId) {

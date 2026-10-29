@@ -220,6 +220,7 @@ Răspunsuri:
   "averageRating": 3.8, "myState": "NONE"
 }
 ```
+Câmpuri în plus pentru agendă: `"isHost": true, "pendingRequests": 2` (cererile în așteptare, completat doar pentru organizator).
 `averageRating` este nivelul mediu al participanților (gol dacă nimeni nu are rating). `myState`: `NONE`, `PENDING`, `ACCEPTED`, `REJECTED`, `LEFT` (starea mea în lobby).
 
 `GET /lobbies/calendar` răspunde `{ "days": ["2026-10-21", "2026-10-24"] }`.

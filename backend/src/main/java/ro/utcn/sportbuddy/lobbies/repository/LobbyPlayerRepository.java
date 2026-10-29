@@ -18,5 +18,8 @@ public interface LobbyPlayerRepository extends JpaRepository<LobbyPlayer, Long> 
 
     long countByLobbyIdAndStatusIn(Long lobbyId, Collection<PlayerStatus> statuses);
 
+    // pentru agendă: lobby-urile în care joacă un utilizator
+    List<LobbyPlayer> findByUserIdAndStatusIn(Long userId, Collection<PlayerStatus> statuses);
+
     Optional<LobbyPlayer> findByLobbyIdAndUserId(Long lobbyId, Long userId);
 }

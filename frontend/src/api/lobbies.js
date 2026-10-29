@@ -10,6 +10,15 @@ export function getLobbiesForDay(cityId, sportId, date) {
     return http(`/lobbies?cityId=${cityId}&sportId=${sportId}&date=${date}`)
 }
 
+// filter: UPCOMING, CREATED, REQUESTS sau FINISHED
+export function getMyLobbies(filter) {
+    return http(`/lobbies/mine?filter=${filter}`)
+}
+
+export function getTodo() {
+    return http('/lobbies/mine/todo')
+}
+
 export function getLobby(id) {
     return http(`/lobbies/${id}`)
 }

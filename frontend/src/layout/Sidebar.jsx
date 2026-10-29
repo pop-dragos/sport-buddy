@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { getSports } from '../api/catalog'
+import { getTodo } from '../api/lobbies'
 import CalendarModal from '../features/lobbies/CalendarModal'
 import UserMenu from './UserMenu'
 
@@ -144,12 +145,23 @@ export default function Sidebar() {
   const [error, setError] = useState(false)
   // sportul pentru care e deschis calendarul; null = calendar închis
   const [calendarSport, setCalendarSport] = useState(null)
+  // numărul „De făcut" de lângă Agenda mea; se recitește la fiecare schimbare de pagină
+  const [todoTotal, setTodoTotal] = useState(0)
+  const { pathname } = useLocation()
 
   useEffect(() => {
     getSports()
       .then(setSports)
       .catch(() => setError(true))
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    getTodo()
+      .then((t) => { if (!cancelled) setTodoTotal(t.total) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [pathname])
 
   return (
     <aside className="sidebar">
@@ -166,6 +178,7 @@ export default function Sidebar() {
         <NavLink to="/agenda" className={({ isActive }) => `si ${isActive ? 'active' : ''}`}>
           <IconAgenda color="currentColor" />
           <span>Agenda mea</span>
+          {todoTotal > 0 && <span className="agenda-count" title="De făcut">{todoTotal}</span>}
         </NavLink>
 
         <NavLink to="/friends" className={({ isActive }) => `si ${isActive ? 'active' : ''}`}>
