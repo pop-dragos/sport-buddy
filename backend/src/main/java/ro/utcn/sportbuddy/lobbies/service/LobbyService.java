@@ -20,6 +20,7 @@ import ro.utcn.sportbuddy.lobbies.dto.CreateLobbyRequest;
 import ro.utcn.sportbuddy.lobbies.dto.JoinRequestResult;
 import ro.utcn.sportbuddy.lobbies.dto.LeaveResult;
 import ro.utcn.sportbuddy.lobbies.dto.LobbyDetails;
+import ro.utcn.sportbuddy.lobbies.dto.LobbyStats;
 import ro.utcn.sportbuddy.lobbies.dto.LobbySummary;
 import ro.utcn.sportbuddy.lobbies.dto.PaymentTarget;
 import ro.utcn.sportbuddy.lobbies.dto.TodoCounts;
@@ -35,6 +36,7 @@ import ro.utcn.sportbuddy.lobbies.repository.LobbyPlayerRepository;
 import ro.utcn.sportbuddy.lobbies.repository.LobbyRepository;
 import ro.utcn.sportbuddy.ratings.dto.RatingStatsDto;
 import ro.utcn.sportbuddy.ratings.service.RatingService;
+import ro.utcn.sportbuddy.users.dto.UserSummary;
 import ro.utcn.sportbuddy.users.service.UserService;
 
 import java.math.BigDecimal;
@@ -48,6 +50,8 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +68,8 @@ public class LobbyService {
     // jucătorii care ocupă un loc: încă în lobby sau, după meci, bifați prezenți ori absenți
     private static final List<PlayerStatus> ACTIVE =
             List.of(PlayerStatus.JOINED, PlayerStatus.ATTENDED, PlayerStatus.NO_SHOW);
+    // cei care au jucat sau joacă efectiv (fără absenți), pentru profil și „jucate împreună"
+    private static final List<PlayerStatus> PLAYED = List.of(PlayerStatus.JOINED, PlayerStatus.ATTENDED);
 
     private final LobbyRepository lobbyRepository;
     private final LobbyPlayerRepository lobbyPlayerRepository;
@@ -180,15 +186,7 @@ public class LobbyService {
         request.setStatus(JoinRequestStatus.ACCEPTED);
         request.setDecidedAt(Instant.now());
 
-        // cine a ieșit și revine are deja un rând în lobby_players (unic pe lobby + utilizator), îl refolosim
-        LobbyPlayer player = lobbyPlayerRepository.findByLobbyIdAndUserId(lobbyId, request.getUserId())
-                .orElseGet(LobbyPlayer::new);
-        player.setLobbyId(lobbyId);
-        player.setUserId(request.getUserId());
-        player.setStatus(PlayerStatus.JOINED);
-        player.setCancelledAt(null);
-        lobbyPlayerRepository.save(player);
-        events.publishEvent(new PlayerJoinedEvent(lobbyId, request.getUserId()));
+        addPlayer(lobbyId, request.getUserId());
 
         return toDetails(lobby, userId);
     }
@@ -344,6 +342,38 @@ public class LobbyService {
         return toDetails(lobby, userId);
     }
 
+    // Un utilizator demo care nu e încă în lobby intră direct, fără cerere.
+    @Transactional
+    public LobbyDetails simulateJoin(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        requireOpen(lobby);
+        requireFreeSlot(lobby);
+        Long demoId = userService.findAll().stream()
+                .map(UserSummary::id)
+                .filter(id -> userService.isActive(id) && !isParticipant(lobbyId, id))
+                .findFirst()
+                .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "NO_DEMO_PLAYER",
+                        "Nu mai există jucători demo care să nu fie în lobby."));
+        // dacă avea o cerere în așteptare, o considerăm acceptată
+        joinRequestRepository.findByLobbyIdAndUserIdAndStatus(lobbyId, demoId, JoinRequestStatus.PENDING)
+                .ifPresent(r -> {
+                    r.setStatus(JoinRequestStatus.ACCEPTED);
+                    r.setDecidedAt(Instant.now());
+                });
+        addPlayer(lobbyId, demoId);
+        return toDetails(lobby, userId);
+    }
+
+    // Jucătorul ales iese din lobby, cu aceleași reguli și același eveniment ca la ieșirea normală.
+    @Transactional
+    public LobbyDetails simulateCancel(Long lobbyId, Long userId, Long playerId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        leave(lobbyId, playerId);
+        return toDetails(lobby, userId);
+    }
+
     @Transactional
     public LobbyDetails simulateFinish(Long lobbyId, Long userId) {
         Lobby lobby = getLobby(lobbyId);
@@ -383,6 +413,19 @@ public class LobbyService {
         return lobbyPlayerRepository.findByLobbyIdAndUserId(lobbyId, userId)
                 .map(p -> p.getStatus() == PlayerStatus.JOINED || p.getStatus() == PlayerStatus.ATTENDED)
                 .orElse(false);
+    }
+
+    // Jucătorul intră în lobby. Cine a ieșit și revine are deja un rând în lobby_players
+    // (unic pe lobby + utilizator), așa că îl refolosim.
+    private void addPlayer(Long lobbyId, Long userId) {
+        LobbyPlayer player = lobbyPlayerRepository.findByLobbyIdAndUserId(lobbyId, userId)
+                .orElseGet(LobbyPlayer::new);
+        player.setLobbyId(lobbyId);
+        player.setUserId(userId);
+        player.setStatus(PlayerStatus.JOINED);
+        player.setCancelledAt(null);
+        lobbyPlayerRepository.save(player);
+        events.publishEvent(new PlayerJoinedEvent(lobbyId, userId));
     }
 
     private Lobby getLobby(Long lobbyId) {
@@ -539,6 +582,57 @@ public class LobbyService {
                 .count();
         return new TodoCounts(pendingRequests, attendanceToSave, reviewsToGive, paymentsToMake,
                 pendingRequests + attendanceToSave + reviewsToGive + paymentsToMake);
+    }
+
+    // ---------- profil și prieteni (folosite de A) ----------
+
+    // Pe profilul meu: ultimele mele meciuri. Pe profilul altcuiva: doar meciurile jucate împreună.
+    public List<LobbySummary> byUser(Long profileUserId, Long viewerId, int limit) {
+        Set<Long> ids = playedLobbyIds(profileUserId);
+        if (!profileUserId.equals(viewerId)) {
+            ids.retainAll(playedLobbyIds(viewerId));
+        }
+        return lobbyRepository.findAllById(ids).stream()
+                .filter(l -> l.getStatus() != LobbyStatus.CANCELLED)
+                .sorted(Comparator.comparing(Lobby::getStartAt).reversed())
+                .limit(Math.max(1, limit))
+                .map(l -> toSummary(l, viewerId))
+                .toList();
+    }
+
+    // Meciuri jucate (încheiate) și, pe profilul altcuiva, câte dintre ele împreună cu mine.
+    public LobbyStats stats(Long profileUserId, Long viewerId) {
+        Set<Long> played = finishedPlayedIds(profileUserId);
+        Integer together = null;
+        if (!profileUserId.equals(viewerId)) {
+            Set<Long> both = new HashSet<>(played);
+            both.retainAll(finishedPlayedIds(viewerId));
+            together = both.size();
+        }
+        return new LobbyStats(played.size(), together);
+    }
+
+    // Pentru friends (A), „Posibili cunoscuți": cu cine am jucat în lobby-uri.
+    public Set<Long> coPlayerIds(Long userId) {
+        return playedLobbyIds(userId).stream()
+                .flatMap(lobbyId -> lobbyPlayerRepository.findByLobbyIdAndStatusIn(lobbyId, PLAYED).stream())
+                .map(LobbyPlayer::getUserId)
+                .filter(id -> !id.equals(userId))
+                .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    // lobby-urile în care utilizatorul a jucat sau joacă (fără cei care au ieșit sau au lipsit)
+    private Set<Long> playedLobbyIds(Long userId) {
+        return lobbyPlayerRepository.findByUserIdAndStatusIn(userId, PLAYED).stream()
+                .map(LobbyPlayer::getLobbyId)
+                .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    private Set<Long> finishedPlayedIds(Long userId) {
+        return lobbyRepository.findAllById(playedLobbyIds(userId)).stream()
+                .filter(l -> l.getStatus() == LobbyStatus.FINISHED)
+                .map(Lobby::getId)
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     private List<Lobby> lobbiesIPlay(Long userId) {

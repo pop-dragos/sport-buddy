@@ -58,6 +58,14 @@ export function saveAttendance(id, attendance) {
 }
 
 // Simulare, doar pe profilul dev al backend-ului
+export function simulateJoin(id) {
+    return http(`/dev/lobbies/${id}/simulate-join`, { method: 'POST' })
+}
+
+export function simulateCancel(id, userId) {
+    return http(`/dev/lobbies/${id}/simulate-cancel`, { method: 'POST', body: JSON.stringify({ userId }) })
+}
+
 export function simulatePassDeadline(id) {
     return http(`/dev/lobbies/${id}/pass-deadline`, { method: 'POST' })
 }
