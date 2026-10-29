@@ -1,0 +1,28 @@
+/* Chat-ul din pagina lobby-ului (ca în prototip) */
+.chat {
+    height: 190px;
+    overflow-y: auto;
+    background: var(--sf);
+    border-radius: 8px;
+    padding: 8px;
+    margin: 8px 0;
+}
+
+.chat-m {
+    margin: 4px 0;
+    overflow-wrap: anywhere;
+}
+
+.chat-system {
+    color: var(--mu);
+    font-size: 13px;
+    font-style: italic;
+}
+
+.chat-note {
+    margin-top: 6px;
+}
+
+.chat + .r input {
+    flex: 1;
+}

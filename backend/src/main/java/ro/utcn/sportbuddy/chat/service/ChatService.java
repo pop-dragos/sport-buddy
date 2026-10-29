@@ -6,7 +6,6 @@ import ro.utcn.sportbuddy.chat.dto.ChatMessageDto;
 import ro.utcn.sportbuddy.chat.model.LobbyMessage;
 import ro.utcn.sportbuddy.chat.repository.LobbyMessageRepository;
 import ro.utcn.sportbuddy.common.error.ApiException;
-import ro.utcn.sportbuddy.lobbies.dto.LobbyDetails;
 import ro.utcn.sportbuddy.lobbies.service.LobbyService;
 import ro.utcn.sportbuddy.users.service.UserService;
 
@@ -57,14 +56,15 @@ public class ChatService {
         return toDto(saved, new HashMap<>());
     }
 
-    // TEMPORAR: până apare LobbyService.isParticipant (docs/api.md, secțiunea 5).
-    // getDetails aruncă deja 404 dacă lobby-ul nu există.
+    // Rulează la fiecare interogare (3 secunde), deci întâi verificarea ieftină.
+    // Doar pentru cei care nu sunt participanți cerem lobby-ul, ca să răspundem 404 dacă nu există.
     private void requireParticipant(Long lobbyId, Long userId) {
-        LobbyDetails lobby = lobbyService.getDetails(lobbyId, userId);
-        if (!lobby.isHost() && !"ACCEPTED".equals(lobby.myState())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "NOT_PARTICIPANT",
-                    "Doar participanții lobby-ului pot folosi chat-ul.");
+        if (lobbyService.isParticipant(lobbyId, userId)) {
+            return;
         }
+        lobbyService.getDetails(lobbyId, userId);
+        throw new ApiException(HttpStatus.FORBIDDEN, "NOT_PARTICIPANT",
+                "Doar participanții lobby-ului pot folosi chat-ul.");
     }
 
     private ChatMessageDto toDto(LobbyMessage m, Map<Long, String> usernames) {
