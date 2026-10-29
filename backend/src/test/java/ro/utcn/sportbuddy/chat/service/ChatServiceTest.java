@@ -16,6 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 // Repository-ul și service-urile celorlalte module sunt simulate, deci testul nu are nevoie de bază de date.
@@ -44,7 +45,7 @@ class ChatServiceTest {
 
     @Test
     void participantCanSendMessage() {
-        when(lobbyService.getDetails(LOBBY, ANDREI)).thenReturn(lobby(false, "ACCEPTED"));
+        when(lobbyService.isParticipant(LOBBY, ANDREI)).thenReturn(true);
 
         ChatMessageDto dto = chatService.send(LOBBY, ANDREI, "  Ne vedem la 18.  ");
 
@@ -56,15 +57,19 @@ class ChatServiceTest {
     }
 
     @Test
-    void hostCanSendMessage() {
-        when(lobbyService.getDetails(LOBBY, ANA)).thenReturn(lobby(true, "ACCEPTED"));
+    void participantCheckDoesNotLoadWholeLobby() {
+        when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
 
-        assertEquals("ana", chatService.send(LOBBY, ANA, "Salut").senderUsername());
+        chatService.getMessages(LOBBY, ANA, 10L);
+
+        // interogarea la 3 secunde rămâne ieftină
+        verify(lobbyService, never()).getDetails(anyLong(), anyLong());
     }
 
     @Test
     void outsiderCannotSendOrRead() {
-        when(lobbyService.getDetails(LOBBY, ANDREI)).thenReturn(lobby(false, "NONE"));
+        when(lobbyService.isParticipant(LOBBY, ANDREI)).thenReturn(false);
+        when(lobbyService.getDetails(LOBBY, ANDREI)).thenReturn(lobby());
 
         ApiException send = assertThrows(ApiException.class, () -> chatService.send(LOBBY, ANDREI, "Salut"));
         ApiException read = assertThrows(ApiException.class, () -> chatService.getMessages(LOBBY, ANDREI, null));
@@ -76,14 +81,8 @@ class ChatServiceTest {
     }
 
     @Test
-    void playerWhoLeftCannotWrite() {
-        when(lobbyService.getDetails(LOBBY, ANDREI)).thenReturn(lobby(false, "LEFT"));
-
-        assertThrows(ApiException.class, () -> chatService.send(LOBBY, ANDREI, "Salut"));
-    }
-
-    @Test
     void missingLobbyIsNotFound() {
+        when(lobbyService.isParticipant(999L, ANA)).thenReturn(false);
         when(lobbyService.getDetails(999L, ANA))
                 .thenThrow(new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Lobby-ul nu există."));
 
@@ -93,7 +92,7 @@ class ChatServiceTest {
 
     @Test
     void historyIsReturnedOldestFirst() {
-        when(lobbyService.getDetails(LOBBY, ANA)).thenReturn(lobby(true, "ACCEPTED"));
+        when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
         // repository-ul le dă de la cel mai nou la cel mai vechi
         when(messageRepository.findTop100ByLobbyIdOrderByIdDesc(LOBBY)).thenReturn(List.of(
                 new LobbyMessage(LOBBY, ANDREI, false, "al doilea"),
@@ -106,7 +105,7 @@ class ChatServiceTest {
 
     @Test
     void afterReturnsOnlyNewerMessages() {
-        when(lobbyService.getDetails(LOBBY, ANA)).thenReturn(lobby(true, "ACCEPTED"));
+        when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
         when(messageRepository.findByLobbyIdAndIdGreaterThanOrderByIdAsc(LOBBY, 120L))
                 .thenReturn(List.of(new LobbyMessage(LOBBY, ANDREI, false, "nou")));
 
@@ -118,7 +117,7 @@ class ChatServiceTest {
 
     @Test
     void systemMessageHasNoSender() {
-        when(lobbyService.getDetails(LOBBY, ANA)).thenReturn(lobby(true, "ACCEPTED"));
+        when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
         when(messageRepository.findTop100ByLobbyIdOrderByIdDesc(LOBBY))
                 .thenReturn(List.of(new LobbyMessage(LOBBY, null, true, "Lobby confirmat")));
 
@@ -132,7 +131,7 @@ class ChatServiceTest {
 
     @Test
     void eachAuthorIsLookedUpOnce() {
-        when(lobbyService.getDetails(LOBBY, ANA)).thenReturn(lobby(true, "ACCEPTED"));
+        when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
         when(messageRepository.findTop100ByLobbyIdOrderByIdDesc(LOBBY)).thenReturn(List.of(
                 new LobbyMessage(LOBBY, ANDREI, false, "3"),
                 new LobbyMessage(LOBBY, ANDREI, false, "2"),
@@ -143,10 +142,10 @@ class ChatServiceTest {
         verify(userService, times(1)).getSummary(ANDREI);
     }
 
-    // Doar câmpurile folosite de chat contează: isHost și myState.
-    private static LobbyDetails lobby(boolean isHost, String myState) {
+    // Lobby-ul există; conținutul nu contează pentru chat.
+    private static LobbyDetails lobby() {
         return new LobbyDetails(LOBBY, null, null, null, null, "OPEN", null,
                 10, 6, 0, 1, 9, null, 0, null, null, null, null,
-                false, false, myState, isHost, List.of(), List.of());
+                false, false, "NONE", false, List.of(), List.of());
     }
 }

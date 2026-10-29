@@ -6,6 +6,7 @@ import {
   simulateFinish, simulatePassDeadline
 } from '../../api/lobbies'
 import AttendanceCard from './AttendanceCard'
+import LobbyChat from '../chat/LobbyChat'
 import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
 import { formatDay, formatRating, formatTime } from '../home/format'
@@ -202,6 +203,8 @@ export default function LobbyPage() {
           )}
         </div>
       </div>
+
+      <LobbyChat key={lobby.id} lobbyId={lobby.id} canChat={lobby.isHost || lobby.myState === 'ACCEPTED'} />
     </div>
   )
 }
