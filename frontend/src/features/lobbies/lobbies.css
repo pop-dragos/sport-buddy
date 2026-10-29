@@ -55,3 +55,81 @@
 .lobby-actions {
   margin-top: 12px;
 }
+
+/* ---------- pagina lobby-ului ---------- */
+
+.lobby-page {
+  max-width: 720px;
+}
+
+.lobby-back {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin-bottom: 14px;
+  color: var(--mu);
+  font: inherit;
+  cursor: pointer;
+}
+
+.lobby-back:hover {
+  color: var(--tx);
+}
+
+.lobby-title {
+  margin: 0 0 2px;
+  font-size: 18px;
+}
+
+.lobby-small {
+  font-size: 12px;
+}
+
+.lobby-note {
+  margin-top: 10px;
+}
+
+.lobby-list {
+  margin-top: 6px;
+}
+
+/* Data / Ora / Organizator / Locuri */
+.lobby-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0 14px;
+}
+
+@media (max-width: 640px) {
+  .lobby-facts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* bara de locuri ocupate, în albastrul aplicației */
+.bar {
+  height: 4px;
+  background: var(--bd);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: #2563eb;
+}
+
+.lobby-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lobby-rating {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
