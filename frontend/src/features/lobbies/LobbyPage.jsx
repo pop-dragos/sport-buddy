@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
-import { acceptRequest, getLobby, leaveLobby, rejectRequest, requestToJoin } from '../../api/lobbies'
+import {
+  acceptRequest, cancelLobby, getLobby, leaveLobby, lockLobby, rejectRequest, requestToJoin,
+  simulateFinish, simulatePassDeadline
+} from '../../api/lobbies'
 import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
 import { formatDay, formatRating, formatTime } from '../home/format'
@@ -55,6 +58,13 @@ export default function LobbyPage() {
     run(() => leaveLobby(lobby.id))
   }
 
+  function cancel() {
+    const message = lobby.status === 'LOCKED'
+      ? 'Lobby-ul e confirmat. Dacă îl anulezi acum, primești o penalizare la rating. Continui?'
+      : 'Sigur anulezi lobby-ul?'
+    if (window.confirm(message)) run(() => cancelLobby(lobby.id))
+  }
+
   const back = <button className="lobby-back" onClick={() => navigate(-1)}>‹ Înapoi</button>
 
   if (error) {
@@ -98,6 +108,7 @@ export default function LobbyPage() {
             busy={busy}
             onJoin={() => run(() => requestToJoin(lobby.id))}
             onLeave={leave}
+            onCancel={cancel}
           />
         </div>
         {actionError && <div className="err lobby-note">{actionError}</div>}
@@ -133,7 +144,27 @@ export default function LobbyPage() {
         </div>
       )}
 
-      <CostCard lobby={lobby} />
+      <CostCard lobby={lobby} busy={busy} onLock={() => run(() => lockLobby(lobby.id))} />
+
+      {/* import.meta.env.DEV e true doar cu `npm run dev`, deci panoul nu ajunge într-un build real */}
+      {import.meta.env.DEV && lobby.isHost && (lobby.status === 'OPEN' || lobby.status === 'LOCKED') && (
+        <div className="card lobby-sim">
+          <b>Simulare</b>
+          <div className="mu lobby-small">Pentru testare: grăbește ce s-ar întâmpla în timp real.</div>
+          <div className="r lobby-note">
+            {lobby.status === 'OPEN' && (
+              <button className="b o" disabled={busy} onClick={() => run(() => simulatePassDeadline(lobby.id))}>
+                Trece termenul de confirmare
+              </button>
+            )}
+            {lobby.status === 'LOCKED' && (
+              <button className="b o" disabled={busy} onClick={() => run(() => simulateFinish(lobby.id))}>
+                Încheie meciul
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <b>Participanți</b>
@@ -175,10 +206,14 @@ function Fact({ label, value }) {
 }
 
 // Butonul din dreapta, după relația mea cu lobby-ul.
-function LobbyAction({ lobby, busy, onJoin, onLeave }) {
+function LobbyAction({ lobby, busy, onJoin, onLeave, onCancel }) {
   const active = lobby.status === 'OPEN' || lobby.status === 'LOCKED'
 
-  if (lobby.isHost) return <span className="mu">Ești organizatorul</span>
+  if (lobby.isHost) {
+    return active
+      ? <button className="b o" disabled={busy} onClick={onCancel}>Anulează lobby-ul</button>
+      : <span className="mu">Ești organizatorul</span>
+  }
 
   if (lobby.myState === 'ACCEPTED') {
     return active
@@ -209,7 +244,7 @@ function LobbyAction({ lobby, busy, onJoin, onLeave }) {
   )
 }
 
-function CostCard({ lobby }) {
+function CostCard({ lobby, busy, onLock }) {
   const free = lobby.fieldCost === 0
   const deadline = `${formatDay(lobby.confirmDeadline)}, ${formatTime(lobby.confirmDeadline)}`
 
@@ -235,6 +270,12 @@ function CostCard({ lobby }) {
       )}
       {lobby.status === 'LOCKED' && (
         <div className="mu lobby-note lobby-small">De acum, ieșirea din lobby contează ca anulare târzie.</div>
+      )}
+
+      {lobby.isHost && lobby.status === 'OPEN' && (
+        <div className="lobby-note">
+          <button className="b" disabled={busy} onClick={onLock}>Confirmă lobby-ul</button>
+        </div>
       )}
     </div>
   )

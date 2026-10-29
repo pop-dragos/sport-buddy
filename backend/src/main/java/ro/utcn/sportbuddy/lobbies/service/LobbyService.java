@@ -1,5 +1,6 @@
 package ro.utcn.sportbuddy.lobbies.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,6 +9,10 @@ import ro.utcn.sportbuddy.catalog.dto.FieldDto;
 import ro.utcn.sportbuddy.catalog.dto.SportDto;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.events.LobbyCancelledEvent;
+import ro.utcn.sportbuddy.common.events.LobbyLockedEvent;
+import ro.utcn.sportbuddy.common.events.PlayerCancelledEvent;
+import ro.utcn.sportbuddy.common.events.PlayerJoinedEvent;
 import ro.utcn.sportbuddy.lobbies.dto.CalendarDays;
 import ro.utcn.sportbuddy.lobbies.dto.CreateLobbyRequest;
 import ro.utcn.sportbuddy.lobbies.dto.JoinRequestResult;
@@ -28,6 +33,7 @@ import ro.utcn.sportbuddy.ratings.service.RatingService;
 import ro.utcn.sportbuddy.users.service.UserService;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -44,6 +50,8 @@ import java.util.OptionalDouble;
 public class LobbyService {
 
     private static final ZoneId ZONE = ZoneId.of("Europe/Bucharest");
+    // cât considerăm că durează un meci, ca să îl marcăm încheiat
+    private static final Duration MATCH_DURATION = Duration.ofHours(2);
 
     private final LobbyRepository lobbyRepository;
     private final LobbyPlayerRepository lobbyPlayerRepository;
@@ -53,10 +61,13 @@ public class LobbyService {
     private final RatingService ratingService;
     private final LockDeadlineCalculator deadlineCalculator;
     private final PriceCalculator priceCalculator;
+    private final ApplicationEventPublisher events;
 
     public LobbyService(LobbyRepository lobbyRepository, LobbyPlayerRepository lobbyPlayerRepository,
             JoinRequestRepository joinRequestRepository, CatalogService catalogService, UserService userService,
-            RatingService ratingService, LockDeadlineCalculator deadlineCalculator, PriceCalculator priceCalculator) {
+            RatingService ratingService, LockDeadlineCalculator deadlineCalculator, PriceCalculator priceCalculator,
+            ApplicationEventPublisher events) {
+        this.events = events;
         this.lobbyRepository = lobbyRepository;
         this.lobbyPlayerRepository = lobbyPlayerRepository;
         this.joinRequestRepository = joinRequestRepository;
@@ -165,6 +176,7 @@ public class LobbyService {
         player.setStatus(PlayerStatus.JOINED);
         player.setCancelledAt(null);
         lobbyPlayerRepository.save(player);
+        events.publishEvent(new PlayerJoinedEvent(lobbyId, request.getUserId()));
 
         return toDetails(lobby, userId);
     }
@@ -209,8 +221,91 @@ public class LobbyService {
         };
         player.setStatus(late ? PlayerStatus.CANCELLED_LATE : PlayerStatus.CANCELLED_FREE);
         player.setCancelledAt(Instant.now());
-        // penalizarea pentru ieșirea târzie (evenimentul către ratings) vine odată cu confirmarea lobby-ului
+        // ratings (C) dă penalizarea dacă late e true
+        events.publishEvent(new PlayerCancelledEvent(lobbyId, userId, late));
         return new LeaveResult(late);
+    }
+
+    // ---------- confirmare, anulare, încheiere ----------
+
+    // Organizatorul poate confirma oricând cât lobby-ul e deschis, chiar sub minim.
+    @Transactional
+    public LobbyDetails lock(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        requireOpen(lobby);
+        lockLobby(lobby);
+        return toDetails(lobby, userId);
+    }
+
+    // Anularea de către organizator; după confirmare primește penalizare (răspunsul are aceeași formă ca la leave).
+    @Transactional
+    public LeaveResult cancel(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        boolean late = switch (lobby.getStatus()) {
+            case OPEN -> false;
+            case LOCKED -> true;
+            default -> throw new ApiException(HttpStatus.CONFLICT, "LOBBY_NOT_OPEN", "Lobby-ul s-a încheiat deja.");
+        };
+        lobby.setStatus(LobbyStatus.CANCELLED);
+        events.publishEvent(new LobbyCancelledEvent(lobbyId, userId, late));
+        return new LeaveResult(late);
+    }
+
+    // Rulat de LobbyScheduler o dată pe minut.
+    @Transactional
+    public void processDeadlines() {
+        LocalDateTime now = LocalDateTime.now(ZONE);
+        lobbyRepository.findByStatusAndLockDeadlineLessThanEqual(LobbyStatus.OPEN, now)
+                .forEach(this::processDeadline);
+        lobbyRepository.findByStatusAndStartAtLessThanEqual(LobbyStatus.LOCKED, now.minus(MATCH_DURATION))
+                .forEach(lobby -> lobby.setStatus(LobbyStatus.FINISHED));
+    }
+
+    // La termen: cu minimul atins, lobby-ul se confirmă. Fără minim rămâne deschis
+    // (organizatorul vede „minimul nu a fost atins" și poate anula fără penalizare),
+    // iar dacă a venit ora meciului și tot nu e confirmat, se anulează.
+    private void processDeadline(Lobby lobby) {
+        if (occupied(lobby) >= lobby.getMinPlayers()) {
+            lockLobby(lobby);
+        } else if (!lobby.getStartAt().isAfter(LocalDateTime.now(ZONE))) {
+            lobby.setStatus(LobbyStatus.CANCELLED);
+            events.publishEvent(new LobbyCancelledEvent(lobby.getId(), lobby.getCreatorId(), false));
+        }
+    }
+
+    private void lockLobby(Lobby lobby) {
+        List<Long> playerIds = lobbyPlayerRepository.findByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED)
+                .stream().map(LobbyPlayer::getUserId).toList();
+        BigDecimal finalPrice = priceCalculator.pricePerPlayer(lobby.getFieldCost(), occupied(lobby));
+        lobby.setFinalPricePerPlayer(finalPrice);
+        lobby.setStatus(LobbyStatus.LOCKED);
+        lobby.setLockedAt(LocalDateTime.now(ZONE));
+        events.publishEvent(new LobbyLockedEvent(lobby.getId(), toLei(finalPrice), playerIds));
+    }
+
+    // ---------- simulare (doar profilul dev, prin DevLobbyController) ----------
+
+    @Transactional
+    public LobbyDetails simulatePassDeadline(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        requireOpen(lobby);
+        lobby.setLockDeadline(LocalDateTime.now(ZONE));
+        processDeadline(lobby);
+        return toDetails(lobby, userId);
+    }
+
+    @Transactional
+    public LobbyDetails simulateFinish(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        if (lobby.getStatus() != LobbyStatus.LOCKED) {
+            throw new ApiException(HttpStatus.CONFLICT, "LOBBY_NOT_LOCKED", "Confirmă lobby-ul înainte să îl închei.");
+        }
+        lobby.setStatus(LobbyStatus.FINISHED);
+        return toDetails(lobby, userId);
     }
 
     // Folosit și de chat (C): cine e în lobby, inclusiv după ce meciul s-a încheiat.
@@ -248,10 +343,14 @@ public class LobbyService {
     }
 
     private void requireFreeSlot(Lobby lobby) {
-        long joined = lobbyPlayerRepository.countByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED);
-        if (priceCalculator.occupiedSlots(lobby.getGuestCount(), joined) >= lobby.getCapacity()) {
+        if (occupied(lobby) >= lobby.getCapacity()) {
             throw new ApiException(HttpStatus.CONFLICT, "LOBBY_FULL", "Lobby-ul este complet.");
         }
+    }
+
+    private int occupied(Lobby lobby) {
+        long joined = lobbyPlayerRepository.countByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED);
+        return priceCalculator.occupiedSlots(lobby.getGuestCount(), joined);
     }
 
     // ---------- citire ----------

@@ -71,4 +71,14 @@ public class LobbyController {
     public LeaveResult leave(@PathVariable Long id) {
         return lobbyService.leave(id, CurrentUser.id());
     }
+
+    @PostMapping("/{id}/lock")
+    public LobbyDetails lock(@PathVariable Long id) {
+        return lobbyService.lock(id, CurrentUser.id());
+    }
+
+    @PostMapping("/{id}/cancel")
+    public LeaveResult cancel(@PathVariable Long id) {
+        return lobbyService.cancel(id, CurrentUser.id());
+    }
 }

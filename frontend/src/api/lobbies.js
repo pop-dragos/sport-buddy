@@ -34,3 +34,20 @@ export function rejectRequest(id, requestId) {
 export function leaveLobby(id) {
     return http(`/lobbies/${id}/leave`, { method: 'POST' })
 }
+
+export function lockLobby(id) {
+    return http(`/lobbies/${id}/lock`, { method: 'POST' })
+}
+
+export function cancelLobby(id) {
+    return http(`/lobbies/${id}/cancel`, { method: 'POST' })
+}
+
+// Simulare, doar pe profilul dev al backend-ului
+export function simulatePassDeadline(id) {
+    return http(`/dev/lobbies/${id}/pass-deadline`, { method: 'POST' })
+}
+
+export function simulateFinish(id) {
+    return http(`/dev/lobbies/${id}/finish`, { method: 'POST' })
+}
