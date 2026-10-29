@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
 import {
-  acceptRequest, cancelLobby, getLobby, leaveLobby, lockLobby, rejectRequest, requestToJoin,
+  acceptRequest, cancelLobby, getLobby, leaveLobby, lockLobby, rejectRequest, requestToJoin, saveAttendance,
   simulateFinish, simulatePassDeadline
 } from '../../api/lobbies'
+import AttendanceCard from './AttendanceCard'
 import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
 import { formatDay, formatRating, formatTime } from '../home/format'
@@ -144,6 +145,14 @@ export default function LobbyPage() {
         </div>
       )}
 
+      {lobby.isHost && lobby.status === 'FINISHED' && !lobby.attendanceSaved && (
+        <AttendanceCard
+          lobby={lobby}
+          busy={busy}
+          onSave={(attendance) => run(() => saveAttendance(lobby.id, attendance))}
+        />
+      )}
+
       <CostCard lobby={lobby} busy={busy} onLock={() => run(() => lockLobby(lobby.id))} />
 
       {/* import.meta.env.DEV e true doar cu `npm run dev`, deci panoul nu ajunge într-un build real */}
@@ -177,6 +186,7 @@ export default function LobbyPage() {
                   <Link className="lk" to={`/profile/${p.userId}`}>{p.username}</Link>
                   {p.userId === user.id && <span className="mu"> (tu)</span>}
                   {p.isHost && <div className="mu lobby-small">organizator</div>}
+                  {p.attended === false && <div className="mu lobby-small">absent</div>}
                 </span>
               </span>
               <span className="lobby-rating">

@@ -248,11 +248,11 @@ Răspunsuri:
   "fieldCost": 200,
   "confirmDeadline": "2026-10-24T12:00:00",
   "estimatedPrice": 34, "priceAtFull": 20, "finalPrice": null,
-  "minNotReached": false, "joinClosed": false,
+  "minNotReached": false, "joinClosed": false, "attendanceSaved": false,
   "myState": "ACCEPTED", "isHost": false,
   "participants": [
     { "userId": 7, "username": "ana.popescu", "isHost": true,
-      "rating": 4.1, "reviewCount": 10, "reliabilityPercent": 100, "paymentMethod": null }
+      "rating": 4.1, "reviewCount": 10, "reliabilityPercent": 100, "paymentMethod": null, "attended": null }
   ],
   "pendingRequests": []
 }
@@ -260,6 +260,7 @@ Răspunsuri:
 - `estimatedPrice` și `priceAtFull` se completează doar cât e `OPEN`; `finalPrice` doar după confirmare. Cu `fieldCost = 0` toate trei sunt goale (lobby gratuit).
 - `participants` conține doar jucătorii cu cont și statusul `ACCEPTED`. Jucătorii fără cont apar prin `broughtPlayers` (interfața afișează „Adus de organizator, fără cont"). `rating`, `reviewCount`, `reliabilityPercent` vin de la `RatingService` (C) și sunt goale pentru utilizatorii noi. `paymentMethod` este `ONLINE` sau `ON_SITE` după confirmare, altfel gol.
 - `pendingRequests` este completat doar pentru organizator: `{ "requestId": 9, "userId": 21, "username": "...", "rating": 3.9, "reliabilityPercent": 92 }`.
+- `attendanceSaved` este true după ce organizatorul a salvat prezența. `attended` (la fiecare participant) este gol până atunci, apoi true (a venit) sau false (absent).
 - `minNotReached` este true dacă termenul a trecut și minimul nu e atins. `joinClosed` este true când nu se mai pot trimite cereri (lobby plin, confirmat, anulat sau termen depășit).
 
 Acțiuni:

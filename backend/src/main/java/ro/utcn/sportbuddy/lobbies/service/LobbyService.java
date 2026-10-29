@@ -9,10 +9,12 @@ import ro.utcn.sportbuddy.catalog.dto.FieldDto;
 import ro.utcn.sportbuddy.catalog.dto.SportDto;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.events.AttendanceSavedEvent;
 import ro.utcn.sportbuddy.common.events.LobbyCancelledEvent;
 import ro.utcn.sportbuddy.common.events.LobbyLockedEvent;
 import ro.utcn.sportbuddy.common.events.PlayerCancelledEvent;
 import ro.utcn.sportbuddy.common.events.PlayerJoinedEvent;
+import ro.utcn.sportbuddy.lobbies.dto.AttendanceRequest;
 import ro.utcn.sportbuddy.lobbies.dto.CalendarDays;
 import ro.utcn.sportbuddy.lobbies.dto.CreateLobbyRequest;
 import ro.utcn.sportbuddy.lobbies.dto.JoinRequestResult;
@@ -40,6 +42,8 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +56,9 @@ public class LobbyService {
     private static final ZoneId ZONE = ZoneId.of("Europe/Bucharest");
     // cât considerăm că durează un meci, ca să îl marcăm încheiat
     private static final Duration MATCH_DURATION = Duration.ofHours(2);
+    // jucătorii care ocupă un loc: încă în lobby sau, după meci, bifați prezenți ori absenți
+    private static final List<PlayerStatus> ACTIVE =
+            List.of(PlayerStatus.JOINED, PlayerStatus.ATTENDED, PlayerStatus.NO_SHOW);
 
     private final LobbyRepository lobbyRepository;
     private final LobbyPlayerRepository lobbyPlayerRepository;
@@ -285,6 +292,41 @@ public class LobbyService {
         events.publishEvent(new LobbyLockedEvent(lobby.getId(), toLei(finalPrice), playerIds));
     }
 
+    // După meci, organizatorul bifează cine a venit. Se poate face o singură dată.
+    // Organizatorul e considerat prezent; cine nu apare în listă e considerat prezent.
+    @Transactional
+    public LobbyDetails saveAttendance(Long lobbyId, Long userId, AttendanceRequest req) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        if (lobby.getStatus() != LobbyStatus.FINISHED) {
+            throw new ApiException(HttpStatus.CONFLICT, "LOBBY_NOT_FINISHED", "Prezența se salvează după meci.");
+        }
+        if (lobby.isAttendanceSaved()) {
+            throw new ApiException(HttpStatus.CONFLICT, "ATTENDANCE_ALREADY_SAVED", "Prezența a fost deja salvată.");
+        }
+
+        Map<Long, Boolean> present = new HashMap<>();
+        req.attendance().forEach(e -> present.put(e.userId(), e.present()));
+
+        List<LobbyPlayer> players = lobbyPlayerRepository.findByLobbyIdAndStatus(lobbyId, PlayerStatus.JOINED);
+        List<Long> presentIds = new ArrayList<>();
+        List<Long> absentIds = new ArrayList<>();
+        for (LobbyPlayer player : players) {
+            boolean isHostPlayer = player.getUserId().equals(lobby.getCreatorId());
+            boolean came = isHostPlayer || present.getOrDefault(player.getUserId(), true);
+            player.setStatus(came ? PlayerStatus.ATTENDED : PlayerStatus.NO_SHOW);
+            // organizatorul apare separat în eveniment (hostUserId), ca în docs/api.md
+            if (!isHostPlayer) {
+                (came ? presentIds : absentIds).add(player.getUserId());
+            }
+        }
+        lobby.setAttendanceSaved(true);
+
+        // ratings (C): crește prezențele, iar absenții primesc review automat de 1 stea
+        events.publishEvent(new AttendanceSavedEvent(lobbyId, lobby.getCreatorId(), presentIds, absentIds));
+        return toDetails(lobby, userId);
+    }
+
     // ---------- simulare (doar profilul dev, prin DevLobbyController) ----------
 
     @Transactional
@@ -349,7 +391,7 @@ public class LobbyService {
     }
 
     private int occupied(Lobby lobby) {
-        long joined = lobbyPlayerRepository.countByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED);
+        long joined = lobbyPlayerRepository.countByLobbyIdAndStatusIn(lobby.getId(), ACTIVE);
         return priceCalculator.occupiedSlots(lobby.getGuestCount(), joined);
     }
 
@@ -392,7 +434,7 @@ public class LobbyService {
         FieldDto field = catalogService.findField(lobby.getFieldId()).orElseThrow();
         CityDto city = catalogService.findCity(lobby.getCityId()).orElseThrow();
 
-        List<LobbyPlayer> joined = lobbyPlayerRepository.findByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED);
+        List<LobbyPlayer> joined = lobbyPlayerRepository.findByLobbyIdAndStatusIn(lobby.getId(), ACTIVE);
         int occupied = priceCalculator.occupiedSlots(lobby.getGuestCount(), joined.size());
         List<Double> ratings = joined.stream()
                 .map(p -> ratingService.getStats(p.getUserId()).average())
@@ -428,7 +470,7 @@ public class LobbyService {
         boolean deadlinePassed = now.isAfter(lobby.getLockDeadline());
 
         List<LobbyDetails.Participant> participants = lobbyPlayerRepository
-                .findByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED).stream()
+                .findByLobbyIdAndStatusIn(lobby.getId(), ACTIVE).stream()
                 .map(p -> toParticipant(p, lobby, locked))
                 .toList();
 
@@ -464,6 +506,7 @@ public class LobbyService {
                 finalPrice,
                 open && deadlinePassed && occupied < lobby.getMinPlayers(),
                 !open || freeSlots == 0 || deadlinePassed,
+                lobby.isAttendanceSaved(),
                 myState(lobby, userId),
                 isHost,
                 participants,
@@ -493,7 +536,12 @@ public class LobbyService {
                 stats.average(),
                 stats.reviewCount(),
                 stats.reliabilityPercent(),
-                locked ? player.getPaymentMethod().name() : null);
+                locked ? player.getPaymentMethod().name() : null,
+                switch (player.getStatus()) {
+                    case ATTENDED -> true;
+                    case NO_SHOW -> false;
+                    default -> null;
+                });
     }
 
     // Media ratingurilor participanților care au deja rating, cu o zecimală.

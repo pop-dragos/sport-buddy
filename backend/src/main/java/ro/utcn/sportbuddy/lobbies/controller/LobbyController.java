@@ -5,6 +5,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ro.utcn.sportbuddy.common.security.CurrentUser;
+import ro.utcn.sportbuddy.lobbies.dto.AttendanceRequest;
 import ro.utcn.sportbuddy.lobbies.dto.CalendarDays;
 import ro.utcn.sportbuddy.lobbies.dto.CreateLobbyRequest;
 import ro.utcn.sportbuddy.lobbies.dto.JoinRequestResult;
@@ -80,5 +81,10 @@ public class LobbyController {
     @PostMapping("/{id}/cancel")
     public LeaveResult cancel(@PathVariable Long id) {
         return lobbyService.cancel(id, CurrentUser.id());
+    }
+
+    @PostMapping("/{id}/attendance")
+    public LobbyDetails attendance(@PathVariable Long id, @Valid @RequestBody AttendanceRequest req) {
+        return lobbyService.saveAttendance(id, CurrentUser.id(), req);
     }
 }

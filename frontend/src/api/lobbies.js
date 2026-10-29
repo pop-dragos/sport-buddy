@@ -43,6 +43,11 @@ export function cancelLobby(id) {
     return http(`/lobbies/${id}/cancel`, { method: 'POST' })
 }
 
+// attendance: [{ userId, present }], fără organizator
+export function saveAttendance(id, attendance) {
+    return http(`/lobbies/${id}/attendance`, { method: 'POST', body: JSON.stringify({ attendance }) })
+}
+
 // Simulare, doar pe profilul dev al backend-ului
 export function simulatePassDeadline(id) {
     return http(`/dev/lobbies/${id}/pass-deadline`, { method: 'POST' })
