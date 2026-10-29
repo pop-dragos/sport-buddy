@@ -242,12 +242,22 @@ public class UserService {
         return true;
     }
 
-    // Nu e readOnly: settingsOf poate crea setările implicite ale unui utilizator vechi.
+    // Pentru alte module, unde nu e un utilizator anume care se uită (de exemplu topul jucătorilor):
+    // profilul cum îl vede un străin. Numele și poza vin mereu; restul doar dacă profilul e public.
+    @Transactional
+    public PublicProfile getPublicProfile(Long id) {
+        return getPublicProfile(null, id);
+    }
+
+    // viewerId = cine se uită (null = nimeni anume). Nu e readOnly: settingsOf poate crea setările
+    // implicite ale unui utilizator vechi.
     @Transactional
     public PublicProfile getPublicProfile(Long viewerId, Long id) {
         User u = userRepository.findById(id).filter(User::isActive).orElseThrow(this::notFound);
-        if (!viewerId.equals(id) && settingsOf(id).getProfileVisibility() == ProfileVisibility.FRIENDS
-                && !areFriends(viewerId, id)) {
+        boolean self = id.equals(viewerId);
+        // întâi setarea, ca prietenia să se verifice doar pentru profilurile private
+        if (!self && settingsOf(id).getProfileVisibility() == ProfileVisibility.FRIENDS
+                && (viewerId == null || !areFriends(viewerId, id))) {
             return new PublicProfile(u.getId(), u.getUsername(), u.getFullName(), avatarUrl(u),
                     null, null, null, List.of(), true);
         }

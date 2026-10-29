@@ -463,4 +463,25 @@ class UserServiceTest {
 
         assertEquals(List.of(3L, 2L), service.findSimilarUsers(1L));
     }
+
+    @Test
+    void profileForOtherModulesIsSeenAsByAStranger() {
+        anaShowsProfileOnlyToFriends();
+        ana.setBio("Joc în weekend.");
+        friends = true;
+
+        var p = service.getPublicProfile(1L);
+
+        assertTrue(p.restricted());
+        assertEquals("ana", p.username());
+        assertNull(p.description());
+    }
+
+    @Test
+    void publicProfileForOtherModulesIsComplete() {
+        ana.setBio("Joc în weekend.");
+        var p = service.getPublicProfile(1L);
+        assertFalse(p.restricted());
+        assertEquals("Joc în weekend.", p.description());
+    }
 }
