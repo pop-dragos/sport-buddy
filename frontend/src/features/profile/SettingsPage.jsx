@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AccountSection from './AccountSection'
+import PaymentsSection from './PaymentsSection'
 import Toggle from './Toggle'
 import { useCatalog } from './useCatalog'
 import { useSettings } from './useSettings'
@@ -114,9 +115,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {section === 'payments' && (
-        <div className="card mu">Plățile tale apar aici după ce plătești online un lobby confirmat.</div>
-      )}
+      {section === 'payments' && <PaymentsSection />}
     </div>
   )
 }

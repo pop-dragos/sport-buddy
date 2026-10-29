@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { getSports } from '../../api/catalog'
 import { errorMessage } from '../../api/http'
-import { SPORTS } from '../../mocks/sports'
 import { useAuth } from './useAuth'
 import PasswordInput from './PasswordInput'
 
@@ -20,8 +20,18 @@ export default function SignupForm({ social }) {
   const [age, setAge] = useState('')
   const [phone, setPhone] = useState('')
   const [sportIds, setSportIds] = useState([])
+  const [sports, setSports] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // GET /catalog/sports e public, deci merge și înainte de conectare
+  useEffect(() => {
+    let cancelled = false
+    getSports()
+      .then((s) => { if (!cancelled) setSports(s) })
+      .catch(() => { if (!cancelled) setSports([]) })
+    return () => { cancelled = true }
+  }, [])
 
   function toggleSport(id) {
     setSportIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
@@ -97,7 +107,9 @@ export default function SignupForm({ social }) {
       <div>
         <b>Sporturi preferate *</b>
         <div className="r" style={{ flexWrap: 'wrap', marginTop: 6 }}>
-          {SPORTS.map((s) => (
+          {sports === null && <span className="mu">Se încarcă...</span>}
+          {sports?.length === 0 && <span className="mu">Sporturile nu sunt disponibile acum.</span>}
+          {sports?.map((s) => (
             <button
               key={s.id}
               type="button"

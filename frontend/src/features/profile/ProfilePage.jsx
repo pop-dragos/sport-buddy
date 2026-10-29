@@ -2,12 +2,18 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
 import { getFriends } from '../../api/friends'
+import { getMyLobbies } from '../../api/lobbies'
+import { getUserRating } from '../../api/ratings'
 import { getProfile } from '../../api/users'
 import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
 import FriendButton from '../friends/FriendButton'
+import { formatDay, formatTime } from '../home/format'
 import { levelLabel } from './levels'
+import RatingLine from './RatingLine'
 import { useCatalog } from './useCatalog'
+
+const RECENT_MATCHES = 3
 
 function memberSince(date) {
   return new Date(date).toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })
@@ -19,13 +25,19 @@ function ProfileView({ id }) {
   const isMe = String(me.id) === id
 
   const [other, setOther] = useState(null)
+  const [rating, setRating] = useState(null)
   const [friendCount, setFriendCount] = useState(null)
+  // meciurile încheiate; deocamdată doar pentru profilul meu (pentru alții lipsește /lobbies/by-user)
+  const [finished, setFinished] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let cancelled = false
+    const ignore = () => {}
+    getUserRating(id).then((r) => { if (!cancelled) setRating(r) }).catch(ignore)
     if (isMe) {
-      getFriends().then((f) => { if (!cancelled) setFriendCount(f.length) }).catch(() => {})
+      getFriends().then((f) => { if (!cancelled) setFriendCount(f.length) }).catch(ignore)
+      getMyLobbies('FINISHED').then((l) => { if (!cancelled) setFinished(l) }).catch(ignore)
     } else {
       getProfile(id)
         .then((p) => { if (!cancelled) setOther(p) })
@@ -39,7 +51,7 @@ function ProfileView({ id }) {
   const profile = isMe ? { ...me, memberSince: me.createdAt } : other
   if (!profile) return null
 
-  // profil vizibil doar prietenilor: serverul trimite doar numele și poza
+  // profil vizibil doar prietenilor: serverul trimite doar numele și poza; ratingul rămâne vizibil
   if (profile.restricted) {
     return (
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
@@ -48,7 +60,8 @@ function ProfileView({ id }) {
             <Avatar name={profile.fullName} url={profile.avatarUrl} size={64} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <b style={{ fontSize: 18 }}>{profile.fullName}</b>
-              <div className="mu">Profilul este vizibil doar prietenilor.</div>
+              <RatingLine rating={rating} />
+              <div className="mu" style={{ marginTop: 4 }}>Profilul este vizibil doar prietenilor.</div>
             </div>
           </div>
           <FriendButton profile={profile} />
@@ -59,6 +72,7 @@ function ProfileView({ id }) {
 
   const cityName = cities.find((c) => c.id === profile.cityId)?.name
   const sportName = (sportId) => sports.find((s) => s.id === sportId)?.name ?? `Sport ${sportId}`
+  const tags = rating?.tags ?? []
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
@@ -70,7 +84,7 @@ function ProfileView({ id }) {
             <div className="mu">
               {cityName ? `${cityName} · ` : ''}membru din {memberSince(profile.memberSince)}
             </div>
-            <div className="mu" style={{ marginTop: 4 }}>Fără review-uri</div>
+            <RatingLine rating={rating} />
           </div>
         </div>
 
@@ -89,8 +103,8 @@ function ProfileView({ id }) {
 
       <div className="g" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         {[
-          ['–', 'Meciuri'],
-          ['–', 'Rating'],
+          [finished?.length ?? '–', 'Meciuri'],
+          [rating?.average != null ? rating.average.toFixed(1) : '–', 'Rating'],
           isMe ? [friendCount ?? '–', 'Prieteni'] : ['–', 'Meciuri împreună']
         ].map(([value, label]) => (
           <div className="card" key={label} style={{ textAlign: 'center' }}>
@@ -115,11 +129,28 @@ function ProfileView({ id }) {
 
       <div className="card">
         <b>Etichete de la colegi</b>
-        <div className="mu" style={{ marginTop: 8 }}>Apar după primele review-uri.</div>
+        {tags.length === 0 ? (
+          <div className="mu" style={{ marginTop: 8 }}>Apar după primele review-uri.</div>
+        ) : (
+          <div className="r" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+            {tags.map((t) => <span className="tag" key={t}>{t}</span>)}
+          </div>
+        )}
       </div>
 
       <b style={{ display: 'block', margin: '4px 0 8px' }}>{isMe ? 'Meciurile mele' : 'Meciuri împreună'}</b>
-      <div className="card mu">Nimic de arătat.</div>
+      {(finished ?? []).slice(0, RECENT_MATCHES).map((l) => (
+        <div className="card" key={l.id}>
+          <div className="top">
+            <div>
+              <b>{l.sportName} · {l.fieldName}</b>
+              <div className="mu">{formatDay(l.dateTime)} · {formatTime(l.dateTime)} · {l.cityName}</div>
+            </div>
+            <Link to={`/lobbies/${l.id}`} className="b o" style={{ textDecoration: 'none' }}>Deschide</Link>
+          </div>
+        </div>
+      ))}
+      {(finished ?? []).length === 0 && <div className="card mu">Nimic de arătat.</div>}
     </div>
   )
 }
