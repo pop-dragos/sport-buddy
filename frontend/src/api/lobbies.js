@@ -17,3 +17,20 @@ export function getLobby(id) {
 export function createLobby(data) {
     return http('/lobbies', { method: 'POST', body: JSON.stringify(data) })
 }
+
+export function requestToJoin(id) {
+    return http(`/lobbies/${id}/join-requests`, { method: 'POST' })
+}
+
+export function acceptRequest(id, requestId) {
+    return http(`/lobbies/${id}/join-requests/${requestId}/accept`, { method: 'POST' })
+}
+
+export function rejectRequest(id, requestId) {
+    return http(`/lobbies/${id}/join-requests/${requestId}/reject`, { method: 'POST' })
+}
+
+// ieșire din lobby sau retragerea cererii, dacă nu a fost încă acceptată
+export function leaveLobby(id) {
+    return http(`/lobbies/${id}/leave`, { method: 'POST' })
+}

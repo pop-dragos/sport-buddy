@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
-import { getLobby } from '../../api/lobbies'
+import { acceptRequest, getLobby, leaveLobby, rejectRequest, requestToJoin } from '../../api/lobbies'
 import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
 import { formatDay, formatRating, formatTime } from '../home/format'
@@ -20,6 +20,9 @@ export default function LobbyPage() {
   const { user } = useAuth()
   const [lobby, setLobby] = useState(null)
   const [error, setError] = useState(null)
+  // eroarea ultimei acțiuni (cerere, acceptare...), afișată sub antet
+  const [actionError, setActionError] = useState(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -28,6 +31,29 @@ export default function LobbyPage() {
       .catch((err) => { if (!cancelled) setError(errorMessage(err)) })
     return () => { cancelled = true }
   }, [id])
+
+  // Rulează o acțiune, apoi afișează lobby-ul actualizat.
+  // Acceptarea și refuzul întorc direct lobby-ul; la celelalte îl cerem din nou.
+  async function run(action) {
+    setActionError(null)
+    setBusy(true)
+    try {
+      const res = await action()
+      setLobby(res?.id ? res : await getLobby(id))
+    } catch (err) {
+      setActionError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function leave() {
+    const late = lobby.status === 'LOCKED'
+    if (late && !window.confirm('Lobby-ul e confirmat. Dacă ieși acum, primești o penalizare la rating. Continui?')) {
+      return
+    }
+    run(() => leaveLobby(lobby.id))
+  }
 
   const back = <button className="lobby-back" onClick={() => navigate(-1)}>‹ Înapoi</button>
 
@@ -67,9 +93,45 @@ export default function LobbyPage() {
           <span className="mu">
             {lobby.freeSlots === 0 ? 'Lobby complet' : `${lobby.freeSlots} locuri libere`}, nivel mediu {formatRating(lobby.averageRating)}
           </span>
-          <LobbyAction lobby={lobby} />
+          <LobbyAction
+            lobby={lobby}
+            busy={busy}
+            onJoin={() => run(() => requestToJoin(lobby.id))}
+            onLeave={leave}
+          />
         </div>
+        {actionError && <div className="err lobby-note">{actionError}</div>}
       </div>
+
+      {lobby.isHost && lobby.pendingRequests.length > 0 && (
+        <div className="card">
+          <b>Cereri de alăturare</b>
+          <div className="lobby-list">
+            {lobby.pendingRequests.map((r) => (
+              <div key={r.requestId} className="pl">
+                <span className="lobby-player">
+                  <Avatar name={r.username} size={28} />
+                  <span>
+                    <Link className="lk" to={`/profile/${r.userId}`}>{r.username}</Link>
+                    <div className="mu lobby-small">
+                      rating {formatRating(r.rating)}
+                      {r.reliabilityPercent != null && `, ${r.reliabilityPercent}% prezență`}
+                    </div>
+                  </span>
+                </span>
+                <span className="r">
+                  <button className="b" disabled={busy} onClick={() => run(() => acceptRequest(lobby.id, r.requestId))}>
+                    Acceptă
+                  </button>
+                  <button className="b o" disabled={busy} onClick={() => run(() => rejectRequest(lobby.id, r.requestId))}>
+                    Refuză
+                  </button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <CostCard lobby={lobby} />
 
@@ -113,15 +175,38 @@ function Fact({ label, value }) {
 }
 
 // Butonul din dreapta, după relația mea cu lobby-ul.
-// Cererile de alăturare și ieșirea din lobby vin odată cu backend-ul pentru JoinRequest.
-function LobbyAction({ lobby }) {
+function LobbyAction({ lobby, busy, onJoin, onLeave }) {
+  const active = lobby.status === 'OPEN' || lobby.status === 'LOCKED'
+
   if (lobby.isHost) return <span className="mu">Ești organizatorul</span>
-  if (lobby.myState === 'ACCEPTED') return <span className="mu">Ești în lobby</span>
-  if (lobby.myState === 'LEFT') return <span className="mu">Ai ieșit din lobby</span>
+
+  if (lobby.myState === 'ACCEPTED') {
+    return active
+      ? <button className="b o" disabled={busy} onClick={onLeave}>Ieși din lobby</button>
+      : <span className="mu">Ai participat</span>
+  }
+
+  if (lobby.myState === 'PENDING') {
+    return (
+      <span className="r">
+        <span className="mu">Cerere trimisă</span>
+        <button className="b o" disabled={busy} onClick={onLeave}>Retrage</button>
+      </span>
+    )
+  }
+
   if (lobby.joinClosed) {
     return <button className="b" disabled>{lobby.freeSlots === 0 ? 'Complet' : 'Înscrieri închise'}</button>
   }
-  return <button className="b" disabled title="În curând">Cere să intri</button>
+
+  return (
+    <span className="r">
+      {lobby.myState === 'REJECTED' && <span className="mu">Cererea anterioară a fost refuzată</span>}
+      <button className="b" disabled={busy} onClick={onJoin}>
+        {lobby.myState === 'NONE' ? 'Cere să intri' : 'Cere din nou'}
+      </button>
+    </span>
+  )
 }
 
 function CostCard({ lobby }) {
