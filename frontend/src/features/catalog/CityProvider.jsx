@@ -8,7 +8,14 @@ const DEFAULT_CITY = 'Baia Mare'
 export default function CityProvider({ children }) {
   const { user } = useAuth()
   const [cities, setCities] = useState([])
-  const [selectedId, setSelectedId] = useState(null)
+  // Orașul ales în header, ținut împreună cu cine l-a ales. CityProvider nu se demontează la logout,
+  // așa că alegerea anterioară se folosește doar pentru utilizatorul care a făcut-o.
+  const [choice, setChoice] = useState(null) // { userId, cityId }
+  const selectedId = choice && choice.userId === user?.id ? choice.cityId : null
+
+  function selectCity(cityId) {
+    setChoice({ userId: user?.id, cityId })
+  }
 
   // Dacă backend-ul nu răspunde încă (de exemplu abia pornește), mai încercăm la 3 secunde.
   useEffect(() => {
@@ -33,7 +40,7 @@ export default function CityProvider({ children }) {
     ?? null
 
   return (
-    <CityContext.Provider value={{ cities, city, selectCity: setSelectedId }}>
+    <CityContext.Provider value={{ cities, city, selectCity }}>
       {children}
     </CityContext.Provider>
   )

@@ -65,6 +65,8 @@ public class LobbyService {
     private static final ZoneId ZONE = ZoneId.of("Europe/Bucharest");
     // cât considerăm că durează un meci, ca să îl marcăm încheiat
     private static final Duration MATCH_DURATION = Duration.ofHours(2);
+    // cât de departe în viitor caută recomandările de pe prima pagină
+    private static final Duration RECOMMEND_WINDOW = Duration.ofDays(7);
     // jucătorii care ocupă un loc: încă în lobby sau, după meci, bifați prezenți ori absenți
     private static final List<PlayerStatus> ACTIVE =
             List.of(PlayerStatus.JOINED, PlayerStatus.ATTENDED, PlayerStatus.NO_SHOW);
@@ -582,6 +584,25 @@ public class LobbyService {
                 .count();
         return new TodoCounts(pendingRequests, attendanceToSave, reviewsToGive, paymentsToMake,
                 pendingRequests + attendanceToSave + reviewsToGive + paymentsToMake);
+    }
+
+    // ---------- pentru dashboard (C) ----------
+
+    // Lobby-urile în care utilizatorul ar putea intra în zilele următoare, pentru „Recomandate":
+    // deschise, cu loc liber și cu termenul de confirmare încă neatins; fără cele organizate de el,
+    // cele în care e deja și cele la care are o cerere în așteptare. Sortarea după nivel o face dashboard-ul.
+    public List<LobbySummary> openLobbiesInCity(Long cityId, Long userId) {
+        LocalDateTime now = LocalDateTime.now(ZONE);
+        return lobbyRepository.findByCityIdAndStatusAndStartAtBetweenOrderByStartAtAsc(
+                        cityId, LobbyStatus.OPEN, now, now.plus(RECOMMEND_WINDOW)).stream()
+                .filter(l -> now.isBefore(l.getLockDeadline()))
+                .filter(l -> occupied(l) < l.getCapacity())
+                .filter(l -> !l.getCreatorId().equals(userId))
+                .filter(l -> !isParticipant(l.getId(), userId))
+                .filter(l -> joinRequestRepository
+                        .findByLobbyIdAndUserIdAndStatus(l.getId(), userId, JoinRequestStatus.PENDING).isEmpty())
+                .map(l -> toSummary(l, userId))
+                .toList();
     }
 
     // ---------- profil și prieteni (folosite de A) ----------

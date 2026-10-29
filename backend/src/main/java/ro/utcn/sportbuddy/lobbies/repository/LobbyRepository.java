@@ -12,6 +12,10 @@ public interface LobbyRepository extends JpaRepository<Lobby, Long> {
     List<Lobby> findByCityIdAndSportIdAndStartAtGreaterThanEqualAndStartAtLessThanOrderByStartAtAsc(
             Long cityId, Long sportId, LocalDateTime from, LocalDateTime to);
 
+    // pentru dashboard: lobby-urile dintr-un oraș, de orice sport, într-un interval
+    List<Lobby> findByCityIdAndStatusAndStartAtBetweenOrderByStartAtAsc(
+            Long cityId, LobbyStatus status, LocalDateTime from, LocalDateTime to);
+
     // pentru agendă: lobby-urile create de un utilizator, cele mai noi primele
     List<Lobby> findByCreatorIdOrderByStartAtDesc(Long creatorId);
 
