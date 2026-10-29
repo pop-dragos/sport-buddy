@@ -50,6 +50,16 @@ public class UserService {
         return UserSummary.from(getEntity(id));
     }
 
+    // Pentru alte module (feed, lobbies): datele de afișare ale mai multor utilizatori dintr-o singură interogare.
+    public Map<Long, UserRef> findRefs(Collection<Long> ids) {
+        Map<Long, UserRef> refs = new HashMap<>();
+        if (ids.isEmpty()) return refs;
+        for (User u : userRepository.findAllById(ids)) {
+            refs.put(u.getId(), new UserRef(u.getId(), u.getUsername(), u.getFullName(), avatarUrl(u)));
+        }
+        return refs;
+    }
+
     public Optional<Long> findIdByUsername(String username) {
         return userRepository.findByUsernameIgnoreCase(username).map(User::getId);
     }

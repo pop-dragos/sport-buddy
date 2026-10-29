@@ -3,6 +3,7 @@ import { getDashboard } from '../../api/dashboard'
 import { getSettings } from '../../api/users'
 import { useAuth } from '../auth/useAuth'
 import { useCity } from '../catalog/useCity'
+import Feed from '../feed/Feed'
 import NextMatchCard from './NextMatchCard'
 import ProfileCompletionCard from './ProfileCompletionCard'
 import RecommendedCard from './RecommendedCard'
@@ -62,10 +63,7 @@ export default function HomePage() {
 
             <div>
                 {/* Feed-ul comunității (modulul feed, persoana A) */}
-                <div className="card">
-                    <div className="mu">Comunitatea</div>
-                    <div className="home-empty">Postările comunității apar aici în curând.</div>
-                </div>
+                <Feed />
             </div>
         </div>
     )
