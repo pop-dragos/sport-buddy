@@ -302,15 +302,15 @@ Acțiuni:
 ```json
 { "lobbyId": 55, "cardNumber": "4242 4242 4242 4242", "expiry": "12/29", "cvc": "123" }
 ```
-- Răspuns `201`: `{ "paymentId": 3, "status": "SUCCESS", "amount": 34 }`.
-- Cardul `4242 4242 4242 4242` trece, `4000 0000 0000 0002` este refuzat (`402 CARD_DECLINED`, se salvează cu status `DECLINED`).
-- Reguli: lobby-ul este `LOCKED`, eu sunt participant `ACCEPTED`, are preț final mai mare ca 0, nu am plătit deja. Erori: `409 LOBBY_NOT_LOCKED`, `409 ALREADY_PAID`, `403 NOT_PARTICIPANT`.
+- Răspuns `201`: `{ "paymentId": 3, "status": "PAID", "amount": 34 }`.
+- Cardul `4242 4242 4242 4242` trece, `4000 0000 0000 0002` este refuzat (`402 CARD_DECLINED`, se salvează cu status `FAILED`). Statusurile sunt cele din `entitati.md`: `PENDING`, `PAID`, `FAILED`, `REFUNDED`.
+- Reguli: lobby-ul este `LOCKED`, eu sunt participant `ACCEPTED`, are preț final mai mare ca 0, nu am plătit deja. Erori: `409 LOBBY_NOT_LOCKED`, `409 ALREADY_PAID`, `409 NOTHING_TO_PAY` (lobby gratuit), `403 NOT_PARTICIPANT`.
 - Datele cardului nu se salvează.
 
 `GET /payments/history` răspunde:
 ```json
 [ { "paymentId": 3, "lobbyId": 55, "sportName": "Fotbal", "fieldName": "Sala Polivalentă",
-    "dateTime": "2026-10-24T18:00:00", "amount": 34, "status": "SUCCESS", "createdAt": "2026-10-23T09:10:00" } ]
+    "dateTime": "2026-10-24T18:00:00", "amount": 34, "status": "PAID", "createdAt": "2026-10-23T09:10:00Z" } ]
 ```
 
 ### Simulare (doar profilul `dev`)

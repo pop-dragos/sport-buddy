@@ -6,6 +6,7 @@ import {
   simulateFinish, simulatePassDeadline
 } from '../../api/lobbies'
 import AttendanceCard from './AttendanceCard'
+import PaymentModal from '../payments/PaymentModal'
 import LobbyChat from '../chat/LobbyChat'
 import ReviewCard from '../ratings/ReviewCard'
 import Avatar from '../../shared/Avatar'
@@ -29,6 +30,8 @@ export default function LobbyPage() {
   // eroarea ultimei acțiuni (cerere, acceptare...), afișată sub antet
   const [actionError, setActionError] = useState(null)
   const [busy, setBusy] = useState(false)
+  // fereastra de plată online e deschisă
+  const [paying, setPaying] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -155,7 +158,24 @@ export default function LobbyPage() {
         />
       )}
 
-      <CostCard lobby={lobby} busy={busy} onLock={() => run(() => lockLobby(lobby.id))} />
+      <CostCard
+        lobby={lobby}
+        me={lobby.participants.find((p) => p.userId === user.id)}
+        busy={busy}
+        onLock={() => run(() => lockLobby(lobby.id))}
+        onPay={() => setPaying(true)}
+      />
+
+      {paying && (
+        <PaymentModal
+          lobby={lobby}
+          onClose={() => setPaying(false)}
+          onPaid={() => {
+            setPaying(false)
+            run(() => getLobby(lobby.id))
+          }}
+        />
+      )}
 
       {/* import.meta.env.DEV e true doar cu `npm run dev`, deci panoul nu ajunge într-un build real */}
       {import.meta.env.DEV && lobby.isHost && (lobby.status === 'OPEN' || lobby.status === 'LOCKED') && (
@@ -263,8 +283,10 @@ function LobbyAction({ lobby, busy, onJoin, onLeave, onCancel }) {
   )
 }
 
-function CostCard({ lobby, busy, onLock }) {
+function CostCard({ lobby, me, busy, onLock, onPay }) {
   const free = lobby.fieldCost === 0
+  // plata online: doar participanții, după confirmare, dacă există un preț
+  const canPay = me && lobby.status === 'LOCKED' && lobby.finalPrice > 0
   const deadline = `${formatDay(lobby.confirmDeadline)}, ${formatTime(lobby.confirmDeadline)}`
 
   return (
@@ -294,6 +316,14 @@ function CostCard({ lobby, busy, onLock }) {
       {lobby.isHost && lobby.status === 'OPEN' && (
         <div className="lobby-note">
           <button className="b" disabled={busy} onClick={onLock}>Confirmă lobby-ul</button>
+        </div>
+      )}
+
+      {canPay && me.paymentMethod === 'ONLINE' && <div className="mu lobby-note">Ai plătit online.</div>}
+      {canPay && me.paymentMethod !== 'ONLINE' && (
+        <div className="r lobby-note">
+          <button className="b" disabled={busy} onClick={onPay}>Plătește online</button>
+          <span className="mu lobby-small">sau la fața locului</span>
         </div>
       )}
     </div>

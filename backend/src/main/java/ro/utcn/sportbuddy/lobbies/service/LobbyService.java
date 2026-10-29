@@ -21,12 +21,14 @@ import ro.utcn.sportbuddy.lobbies.dto.JoinRequestResult;
 import ro.utcn.sportbuddy.lobbies.dto.LeaveResult;
 import ro.utcn.sportbuddy.lobbies.dto.LobbyDetails;
 import ro.utcn.sportbuddy.lobbies.dto.LobbySummary;
+import ro.utcn.sportbuddy.lobbies.dto.PaymentTarget;
 import ro.utcn.sportbuddy.lobbies.dto.TodoCounts;
 import ro.utcn.sportbuddy.lobbies.model.JoinRequest;
 import ro.utcn.sportbuddy.lobbies.model.JoinRequestStatus;
 import ro.utcn.sportbuddy.lobbies.model.Lobby;
 import ro.utcn.sportbuddy.lobbies.model.LobbyPlayer;
 import ro.utcn.sportbuddy.lobbies.model.LobbyStatus;
+import ro.utcn.sportbuddy.lobbies.model.PaymentMethod;
 import ro.utcn.sportbuddy.lobbies.model.PlayerStatus;
 import ro.utcn.sportbuddy.lobbies.repository.JoinRequestRepository;
 import ro.utcn.sportbuddy.lobbies.repository.LobbyPlayerRepository;
@@ -51,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalDouble;
+import java.util.stream.Collectors;
 
 @Service
 public class LobbyService {
@@ -352,6 +355,29 @@ public class LobbyService {
         return toDetails(lobby, userId);
     }
 
+    // ---------- pentru modulul payments ----------
+
+    public PaymentTarget paymentTarget(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        LobbyPlayer player = lobbyPlayerRepository.findByLobbyIdAndUserId(lobbyId, userId)
+                .filter(p -> ACTIVE.contains(p.getStatus()))
+                .orElse(null);
+        SportDto sport = catalogService.findSport(lobby.getSportId()).orElseThrow();
+        FieldDto field = catalogService.findField(lobby.getFieldId()).orElseThrow();
+        return new PaymentTarget(lobbyId, lobby.getStatus().name(), toLei(lobby.getFinalPricePerPlayer()),
+                player != null, player != null && player.isPaid(),
+                sport.name(), field.name(), lobby.getStartAt());
+    }
+
+    // După o plată online reușită: jucătorul apare cu „Online" la participanți.
+    @Transactional
+    public void markPaidOnline(Long lobbyId, Long userId) {
+        LobbyPlayer player = lobbyPlayerRepository.findByLobbyIdAndUserId(lobbyId, userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "NOT_PARTICIPANT", "Nu ești în acest lobby."));
+        player.setPaid(true);
+        player.setPaymentMethod(PaymentMethod.ONLINE);
+    }
+
     // Folosit și de chat (C): cine e în lobby, inclusiv după ce meciul s-a încheiat.
     public boolean isParticipant(Long lobbyId, Long userId) {
         return lobbyPlayerRepository.findByLobbyIdAndUserId(lobbyId, userId)
@@ -494,8 +520,23 @@ public class LobbyService {
         int attendanceToSave = (int) created.stream()
                 .filter(l -> l.getStatus() == LobbyStatus.FINISHED && !l.isAttendanceSaved())
                 .count();
-        int reviewsToGive = 0;  // vine de la RatingService (C), când apare metoda pentru review-urile de dat
-        int paymentsToMake = 0; // vine odată cu modulul payments
+        // ca jucător: meciuri încheiate la care am venit și n-am notat colegii,
+        // și meciuri confirmate cu preț, neplătite încă online
+        List<LobbyPlayer> myPlayers = lobbyPlayerRepository.findByUserIdAndStatusIn(userId, ACTIVE);
+        Map<Long, Lobby> myLobbies = lobbyRepository.findAllById(myPlayers.stream().map(LobbyPlayer::getLobbyId).toList())
+                .stream().collect(Collectors.toMap(Lobby::getId, l -> l));
+        int reviewsToGive = (int) myPlayers.stream()
+                .filter(p -> p.getStatus() != PlayerStatus.NO_SHOW)
+                .map(p -> myLobbies.get(p.getLobbyId()))
+                .filter(l -> l != null && l.getStatus() == LobbyStatus.FINISHED)
+                .filter(l -> !ratingService.hasReviewed(l.getId(), userId))
+                .count();
+        int paymentsToMake = (int) myPlayers.stream()
+                .filter(p -> p.getStatus() == PlayerStatus.JOINED && !p.isPaid())
+                .map(p -> myLobbies.get(p.getLobbyId()))
+                .filter(l -> l != null && l.getStatus() == LobbyStatus.LOCKED)
+                .filter(l -> l.getFinalPricePerPlayer() != null && l.getFinalPricePerPlayer().signum() > 0)
+                .count();
         return new TodoCounts(pendingRequests, attendanceToSave, reviewsToGive, paymentsToMake,
                 pendingRequests + attendanceToSave + reviewsToGive + paymentsToMake);
     }
