@@ -1,0 +1,59 @@
+/* Comunitatea de pe prima pagină. Culorile etichetelor sunt cele din prototip. */
+.feed-title {
+  margin: 0 0 12px;
+}
+
+.feed-chips {
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.tag.feed-TOURNAMENT {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.tag.feed-DISCUSSION {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.tag.feed-LOOKING_FOR_PLAYERS {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.feed-author {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.feed-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.feed-comment {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+
+.feed-comment b {
+  font-weight: 600;
+}
+
+.feed-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--mu);
+  font-size: 13px;
+}
+
+.feed-link:hover {
+  text-decoration: underline;
+}
