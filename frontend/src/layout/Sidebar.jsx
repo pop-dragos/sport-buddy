@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { getSports } from '../api/catalog'
+import CalendarModal from '../features/lobbies/CalendarModal'
 import UserMenu from './UserMenu'
 
 // Culoarea fiecărui sport, după `code` din backend
@@ -141,6 +142,8 @@ function SportIcon({ type, color }) {
 export default function Sidebar() {
   const [sports, setSports] = useState([])
   const [error, setError] = useState(false)
+  // sportul pentru care e deschis calendarul; null = calendar închis
+  const [calendarSport, setCalendarSport] = useState(null)
 
   useEffect(() => {
     getSports()
@@ -175,7 +178,7 @@ export default function Sidebar() {
         {error && <div className="mu" style={{ padding: '4px 10px' }}>Sporturile nu sunt disponibile.</div>}
 
         {sports.map((s) => (
-          <button key={s.id} className="si" onClick={() => alert(`Ai selectat sportul ${s.name}`)}>
+          <button key={s.id} className="si" onClick={() => setCalendarSport(s)}>
             <SportIcon type={s.code} color={SPORT_COLORS[s.code]} />
             <span>{s.name}</span>
           </button>
@@ -183,6 +186,8 @@ export default function Sidebar() {
       </div>
 
       <UserMenu />
+
+      {calendarSport && <CalendarModal sport={calendarSport} onClose={() => setCalendarSport(null)} />}
     </aside>
   )
 }

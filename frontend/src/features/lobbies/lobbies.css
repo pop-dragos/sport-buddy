@@ -1,0 +1,57 @@
+/* Calendarul, după prototipul din docs/sportbuddy.html */
+.cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.cal span {
+  color: var(--mu);
+  font-size: 12px;
+}
+
+.d {
+  aspect-ratio: 1;
+  border: 0;
+  background: none;
+  border-radius: 8px;
+  position: relative;
+  color: inherit;
+  cursor: pointer;
+}
+
+.d:hover {
+  background: var(--sf);
+}
+
+.d.td {
+  outline: 1px solid var(--mu);
+}
+
+.d.sel {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* punctul de sub zilele care au lobby-uri */
+.d.has::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.lobby-empty {
+  margin: 8px 0;
+}
+
+.lobby-actions {
+  margin-top: 12px;
+}
