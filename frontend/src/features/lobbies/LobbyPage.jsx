@@ -7,6 +7,7 @@ import {
 } from '../../api/lobbies'
 import AttendanceCard from './AttendanceCard'
 import LobbyChat from '../chat/LobbyChat'
+import ReviewCard from '../ratings/ReviewCard'
 import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
 import { formatDay, formatRating, formatTime } from '../home/format'
@@ -203,6 +204,11 @@ export default function LobbyPage() {
           )}
         </div>
       </div>
+
+      {/* după meci, cei care au venit își notează colegii; apoi ratingurile de mai sus se reîncarcă */}
+      {lobby.status === 'FINISHED' && lobby.participants.some((p) => p.userId === user.id && p.attended !== false) && (
+        <ReviewCard key={lobby.id} lobbyId={lobby.id} onSubmitted={() => getLobby(lobby.id).then(setLobby).catch(() => {})} />
+      )}
 
       <LobbyChat key={lobby.id} lobbyId={lobby.id} canChat={lobby.isHost || lobby.myState === 'ACCEPTED'} />
     </div>
