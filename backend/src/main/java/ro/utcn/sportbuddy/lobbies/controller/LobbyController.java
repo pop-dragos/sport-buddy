@@ -12,6 +12,7 @@ import ro.utcn.sportbuddy.lobbies.dto.JoinRequestResult;
 import ro.utcn.sportbuddy.lobbies.dto.LeaveResult;
 import ro.utcn.sportbuddy.lobbies.dto.LobbyDetails;
 import ro.utcn.sportbuddy.lobbies.dto.LobbySummary;
+import ro.utcn.sportbuddy.lobbies.dto.TodoCounts;
 import ro.utcn.sportbuddy.lobbies.service.LobbyService;
 
 import java.time.LocalDate;
@@ -45,6 +46,16 @@ public class LobbyController {
                                  @RequestParam Long sportId,
                                  @RequestParam String month) {
         return lobbyService.calendar(cityId, sportId, month);
+    }
+
+    @GetMapping("/mine")
+    public List<LobbySummary> mine(@RequestParam(defaultValue = "UPCOMING") String filter) {
+        return lobbyService.myLobbies(CurrentUser.id(), filter);
+    }
+
+    @GetMapping("/mine/todo")
+    public TodoCounts todo() {
+        return lobbyService.todo(CurrentUser.id());
     }
 
     @GetMapping("/{id}")

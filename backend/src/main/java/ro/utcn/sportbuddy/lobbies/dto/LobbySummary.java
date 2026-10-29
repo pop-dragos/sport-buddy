@@ -1,5 +1,7 @@
 package ro.utcn.sportbuddy.lobbies.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.LocalDateTime;
 
 // Un lobby într-o listă (calendar, agendă, profil). Forma din docs/api.md.
@@ -18,4 +20,6 @@ public record LobbySummary(
         int currentPlayers,
         int freeSlots,
         Double averageRating,
-        String myState) {}
+        String myState,
+        @JsonProperty("isHost") boolean isHost,
+        int pendingRequests) {}  // cereri în așteptare, completat doar pentru organizator

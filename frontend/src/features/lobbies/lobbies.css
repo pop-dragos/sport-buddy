@@ -147,6 +147,26 @@
   accent-color: #2563eb;
 }
 
+/* ---------- agenda ---------- */
+
+.agenda-tabs {
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+/* numărul „De făcut" de lângă „Agenda mea" din bara laterală */
+.agenda-count {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+}
+
 /* panoul de simulare, doar în dezvoltare */
 .lobby-sim {
   border-style: dashed;
