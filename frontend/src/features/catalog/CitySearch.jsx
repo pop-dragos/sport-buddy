@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCity } from './useCity'
 import './catalog.css'
 
@@ -23,16 +23,44 @@ export default function CitySearch() {
   // textul tastat; null = nu scrie nimic acum, se afișează orașul ales
   const [text, setText] = useState(null)
   const [active, setActive] = useState(0)
+  // true = lista cu toate orașele, deschisă din săgeată
+  const [showAll, setShowAll] = useState(false)
+  const inputRef = useRef(null)
+  const activeRef = useRef(null)
 
-  const suggestions = text === null ? [] : suggest(cities, text)
+  const typing = text !== null && text.trim() !== ''
+  const suggestions = typing ? suggest(cities, text) : showAll ? cities : []
+  const open = typing || showAll
+
+  // cu săgețile de la tastatură, lista derulează după orașul evidențiat
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [active])
 
   function choose(c) {
     selectCity(c.id)
     setText(null)
+    setShowAll(false)
+  }
+
+  function close() {
+    setText(null)
+    setShowAll(false)
+  }
+
+  function toggleAll() {
+    if (showAll) {
+      close()
+      return
+    }
+    const current = cities.findIndex((c) => c.id === city?.id)
+    setActive(Math.max(0, current))
+    setShowAll(true)
+    inputRef.current.focus()
   }
 
   function onKeyDown(e) {
-    if (e.key === 'Escape') setText(null)
+    if (e.key === 'Escape') close()
     if (suggestions.length === 0) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -48,23 +76,37 @@ export default function CitySearch() {
   return (
     <div className="city-search">
       <input
+        ref={inputRef}
         value={text ?? city?.name ?? ''}
         onChange={(e) => {
           setText(e.target.value)
           setActive(0)
         }}
         onFocus={(e) => e.target.select()}
-        onBlur={() => setText(null)}
+        onBlur={close}
         onKeyDown={onKeyDown}
         placeholder="Caută oraș"
       />
+      <button
+        type="button"
+        className="city-toggle"
+        title="Toate orașele"
+        onMouseDown={(e) => {
+          // fără asta, click-ul ar scoate focusul din câmp și lista s-ar închide
+          e.preventDefault()
+          toggleAll()
+        }}
+      >
+        ▾
+      </button>
 
-      {text !== null && text.trim() && (
+      {open && (
         <ul className="city-list">
           {suggestions.length === 0 && <li className="empty">Niciun oraș găsit</li>}
           {suggestions.map((c, i) => (
             <li
               key={c.id}
+              ref={i === active ? activeRef : null}
               className={i === active ? 'on' : ''}
               onMouseDown={(e) => {
                 e.preventDefault()

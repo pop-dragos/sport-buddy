@@ -5,6 +5,25 @@
 
 .city-search input {
   width: 100%;
+  padding-right: 30px;
+}
+
+/* săgeata din dreapta câmpului, care deschide lista cu toate orașele */
+.city-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 30px;
+  border: 0;
+  background: none;
+  color: var(--mu);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.city-toggle:hover {
+  color: var(--tx);
 }
 
 .city-list {
@@ -20,6 +39,8 @@
   border-radius: 10px;
   box-shadow: 0 4px 16px #0003;
   z-index: 20;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .city-list li {
