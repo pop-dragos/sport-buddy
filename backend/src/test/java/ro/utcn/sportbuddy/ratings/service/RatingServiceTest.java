@@ -162,6 +162,14 @@ class RatingServiceTest {
         verify(reviewRepository, never()).save(any());
     }
 
+    @Test
+    void hasReviewedLooksOnlyAtNormalReviews() {
+        when(reviewRepository.existsByLobbyIdAndReviewerIdAndType(55L, 7L, ReviewType.NORMAL)).thenReturn(true);
+
+        assertTrue(ratingService.hasReviewed(55L, 7L));
+        assertFalse(ratingService.hasReviewed(55L, 8L));
+    }
+
     // ---------- top jucători ----------
 
     @Test

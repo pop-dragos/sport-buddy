@@ -43,6 +43,11 @@ public class RatingService {
                 .orElseGet(() -> RatingStatsDto.newUser(userId));
     }
 
+    // Notele se trimit o singură dată pe lobby. Folosit de ReviewService și de contorul „De făcut" (lobbies).
+    public boolean hasReviewed(Long lobbyId, Long userId) {
+        return reviewRepository.existsByLobbyIdAndReviewerIdAndType(lobbyId, userId, ReviewType.NORMAL);
+    }
+
     // Pentru dashboard. Conturile șterse (inactive) nu apar.
     public List<TopPlayerDto> getTopPlayers(int limit) {
         return statsRepository

@@ -1,0 +1,27 @@
+/* Stelele din cardul de review (ca în prototip: gri estompat, galben când sunt alese) */
+.star {
+    background: none;
+    border: 0;
+    font-size: 26px;
+    line-height: 1;
+    padding: 0 2px;
+    color: var(--mu);
+    opacity: 0.3;
+}
+
+.star:hover {
+    opacity: 0.7;
+}
+
+.star.on {
+    opacity: 1;
+    color: #f59e0b;
+}
+
+.review-hint {
+    margin: 4px 0 6px;
+}
+
+.review-send {
+    margin-top: 10px;
+}
