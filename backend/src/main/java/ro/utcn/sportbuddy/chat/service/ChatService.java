@@ -56,6 +56,12 @@ public class ChatService {
         return toDto(saved, new HashMap<>());
     }
 
+    // Mesajele de sistem („X s-a înscris", „Lobby confirmat"), scrise de ChatEventListener.
+    // Nu verifică participantul: le scrie aplicația, nu un utilizator.
+    public void addSystemMessage(Long lobbyId, String text) {
+        messageRepository.save(new LobbyMessage(lobbyId, null, true, text));
+    }
+
     // Rulează la fiecare interogare (3 secunde), deci întâi verificarea ieftină.
     // Doar pentru cei care nu sunt participanți cerem lobby-ul, ca să răspundem 404 dacă nu există.
     private void requireParticipant(Long lobbyId, Long userId) {

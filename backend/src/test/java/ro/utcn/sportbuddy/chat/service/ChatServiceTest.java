@@ -17,6 +17,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 // Repository-ul și service-urile celorlalte module sunt simulate, deci testul nu are nevoie de bază de date.
@@ -127,6 +128,15 @@ class ChatServiceTest {
         assertNull(dto.senderId());
         assertNull(dto.senderUsername());
         verifyNoInteractions(userService);
+    }
+
+    @Test
+    void systemMessageIsSavedWithoutSenderOrParticipantCheck() {
+        chatService.addSystemMessage(LOBBY, "Lobby confirmat.");
+
+        verify(messageRepository).save(argThat(m ->
+                m.isSystem() && m.getSenderId() == null && m.getText().equals("Lobby confirmat.")));
+        verifyNoInteractions(lobbyService);
     }
 
     @Test
