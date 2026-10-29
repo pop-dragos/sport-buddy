@@ -172,6 +172,14 @@
   border-style: dashed;
 }
 
+.lobby-sim-row {
+  flex-wrap: wrap;
+}
+
+.lobby-sim-row select {
+  width: auto;
+}
+
 .lobby-rating {
   text-align: right;
   display: flex;

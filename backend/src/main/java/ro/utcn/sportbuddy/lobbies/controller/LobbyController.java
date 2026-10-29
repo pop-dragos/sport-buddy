@@ -11,6 +11,7 @@ import ro.utcn.sportbuddy.lobbies.dto.CreateLobbyRequest;
 import ro.utcn.sportbuddy.lobbies.dto.JoinRequestResult;
 import ro.utcn.sportbuddy.lobbies.dto.LeaveResult;
 import ro.utcn.sportbuddy.lobbies.dto.LobbyDetails;
+import ro.utcn.sportbuddy.lobbies.dto.LobbyStats;
 import ro.utcn.sportbuddy.lobbies.dto.LobbySummary;
 import ro.utcn.sportbuddy.lobbies.dto.TodoCounts;
 import ro.utcn.sportbuddy.lobbies.service.LobbyService;
@@ -56,6 +57,16 @@ public class LobbyController {
     @GetMapping("/mine/todo")
     public TodoCounts todo() {
         return lobbyService.todo(CurrentUser.id());
+    }
+
+    @GetMapping("/by-user/{userId}")
+    public List<LobbySummary> byUser(@PathVariable Long userId, @RequestParam(defaultValue = "3") int limit) {
+        return lobbyService.byUser(userId, CurrentUser.id(), limit);
+    }
+
+    @GetMapping("/stats/{userId}")
+    public LobbyStats stats(@PathVariable Long userId) {
+        return lobbyService.stats(userId, CurrentUser.id());
     }
 
     @GetMapping("/{id}")

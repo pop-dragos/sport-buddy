@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
 import {
-  acceptRequest, cancelLobby, getLobby, leaveLobby, lockLobby, rejectRequest, requestToJoin, saveAttendance,
-  simulateFinish, simulatePassDeadline
+  acceptRequest, cancelLobby, getLobby, leaveLobby, lockLobby, rejectRequest, requestToJoin, saveAttendance
 } from '../../api/lobbies'
 import AttendanceCard from './AttendanceCard'
+import SimulationCard from './SimulationCard'
 import PaymentModal from '../payments/PaymentModal'
 import LobbyChat from '../chat/LobbyChat'
 import ReviewCard from '../ratings/ReviewCard'
@@ -179,22 +179,7 @@ export default function LobbyPage() {
 
       {/* import.meta.env.DEV e true doar cu `npm run dev`, deci panoul nu ajunge într-un build real */}
       {import.meta.env.DEV && lobby.isHost && (lobby.status === 'OPEN' || lobby.status === 'LOCKED') && (
-        <div className="card lobby-sim">
-          <b>Simulare</b>
-          <div className="mu lobby-small">Pentru testare: grăbește ce s-ar întâmpla în timp real.</div>
-          <div className="r lobby-note">
-            {lobby.status === 'OPEN' && (
-              <button className="b o" disabled={busy} onClick={() => run(() => simulatePassDeadline(lobby.id))}>
-                Trece termenul de confirmare
-              </button>
-            )}
-            {lobby.status === 'LOCKED' && (
-              <button className="b o" disabled={busy} onClick={() => run(() => simulateFinish(lobby.id))}>
-                Încheie meciul
-              </button>
-            )}
-          </div>
-        </div>
+        <SimulationCard lobby={lobby} busy={busy} run={run} />
       )}
 
       <div className="card">
