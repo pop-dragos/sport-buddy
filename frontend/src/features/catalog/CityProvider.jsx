@@ -10,10 +10,20 @@ export default function CityProvider({ children }) {
   const [cities, setCities] = useState([])
   const [selectedId, setSelectedId] = useState(null)
 
+  // Dacă backend-ul nu răspunde încă (de exemplu abia pornește), mai încercăm la 3 secunde.
   useEffect(() => {
-    getCities()
-      .then(setCities)
-      .catch(() => setCities([]))
+    let cancelled = false
+    let timer
+    function load() {
+      getCities()
+        .then((res) => { if (!cancelled) setCities(res) })
+        .catch(() => { if (!cancelled) timer = setTimeout(load, 3000) })
+    }
+    load()
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [])
 
   // Orașul ales în header; până alege ceva: orașul din profil, apoi Baia Mare

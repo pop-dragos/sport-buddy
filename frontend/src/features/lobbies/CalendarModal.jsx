@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCalendar, getLobbiesForDay } from '../../api/lobbies'
 import Modal from '../../shared/Modal'
+import CreateLobbyModal from './CreateLobbyModal'
 import { useCity } from '../catalog/useCity'
 import { formatRating, formatTime } from '../home/format'
 import { dayKey, daysInMonth, leadingBlanks, monthKey } from './dates'
@@ -18,6 +19,7 @@ export default function CalendarModal({ sport, onClose }) {
     const [selected, setSelected] = useState(() => dayKey(today))
     const [days, setDays] = useState([])
     const [lobbies, setLobbies] = useState(null)
+    const [creating, setCreating] = useState(false)
 
     // zilele cu punct, de fiecare dată când se schimbă luna
     useEffect(() => {
@@ -47,6 +49,11 @@ export default function CalendarModal({ sport, onClose }) {
     function open(id) {
         onClose()
         navigate(`/lobbies/${id}`)
+    }
+
+    // „Creează unul" înlocuiește calendarul cu formularul, cu sportul și ziua deja alese
+    if (creating) {
+        return <CreateLobbyModal initialSport={sport} initialDate={selected} onClose={onClose} />
     }
 
     const monthTitle = new Date(view.year, view.month, 1)
@@ -84,7 +91,12 @@ export default function CalendarModal({ sport, onClose }) {
 
             <b>{selectedTitle}</b>
             {lobbies === null && <div className="mu lobby-empty">Se încarcă...</div>}
-            {lobbies?.length === 0 && <div className="mu lobby-empty">Niciun lobby în ziua asta.</div>}
+            {lobbies?.length === 0 && (
+                <>
+                    <div className="mu lobby-empty">Niciun lobby în ziua asta.</div>
+                    <button className="b" onClick={() => setCreating(true)}>Creează unul</button>
+                </>
+            )}
             {lobbies?.map((l) => (
                 <div key={l.id} className="pl">
                     <div>
