@@ -128,6 +128,30 @@
   gap: 10px;
 }
 
+/* numele jucătorilor: culoarea textului, nu albastrul/movul implicit al linkurilor */
+.lobby-player a {
+  color: var(--tx);
+  text-decoration: none;
+}
+
+.lobby-player a:hover {
+  text-decoration: underline;
+}
+
+.lobby-check {
+  cursor: pointer;
+}
+
+.lobby-check input {
+  width: auto;
+  accent-color: #2563eb;
+}
+
+/* panoul de simulare, doar în dezvoltare */
+.lobby-sim {
+  border-style: dashed;
+}
+
 .lobby-rating {
   text-align: right;
   display: flex;

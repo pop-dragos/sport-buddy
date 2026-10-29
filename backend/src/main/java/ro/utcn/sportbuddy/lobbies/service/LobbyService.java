@@ -1,5 +1,6 @@
 package ro.utcn.sportbuddy.lobbies.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,14 +9,25 @@ import ro.utcn.sportbuddy.catalog.dto.FieldDto;
 import ro.utcn.sportbuddy.catalog.dto.SportDto;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.events.AttendanceSavedEvent;
+import ro.utcn.sportbuddy.common.events.LobbyCancelledEvent;
+import ro.utcn.sportbuddy.common.events.LobbyLockedEvent;
+import ro.utcn.sportbuddy.common.events.PlayerCancelledEvent;
+import ro.utcn.sportbuddy.common.events.PlayerJoinedEvent;
+import ro.utcn.sportbuddy.lobbies.dto.AttendanceRequest;
 import ro.utcn.sportbuddy.lobbies.dto.CalendarDays;
 import ro.utcn.sportbuddy.lobbies.dto.CreateLobbyRequest;
+import ro.utcn.sportbuddy.lobbies.dto.JoinRequestResult;
+import ro.utcn.sportbuddy.lobbies.dto.LeaveResult;
 import ro.utcn.sportbuddy.lobbies.dto.LobbyDetails;
 import ro.utcn.sportbuddy.lobbies.dto.LobbySummary;
+import ro.utcn.sportbuddy.lobbies.model.JoinRequest;
+import ro.utcn.sportbuddy.lobbies.model.JoinRequestStatus;
 import ro.utcn.sportbuddy.lobbies.model.Lobby;
 import ro.utcn.sportbuddy.lobbies.model.LobbyPlayer;
 import ro.utcn.sportbuddy.lobbies.model.LobbyStatus;
 import ro.utcn.sportbuddy.lobbies.model.PlayerStatus;
+import ro.utcn.sportbuddy.lobbies.repository.JoinRequestRepository;
 import ro.utcn.sportbuddy.lobbies.repository.LobbyPlayerRepository;
 import ro.utcn.sportbuddy.lobbies.repository.LobbyRepository;
 import ro.utcn.sportbuddy.ratings.dto.RatingStatsDto;
@@ -23,11 +35,15 @@ import ro.utcn.sportbuddy.ratings.service.RatingService;
 import ro.utcn.sportbuddy.users.service.UserService;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,20 +54,30 @@ import java.util.OptionalDouble;
 public class LobbyService {
 
     private static final ZoneId ZONE = ZoneId.of("Europe/Bucharest");
+    // cât considerăm că durează un meci, ca să îl marcăm încheiat
+    private static final Duration MATCH_DURATION = Duration.ofHours(2);
+    // jucătorii care ocupă un loc: încă în lobby sau, după meci, bifați prezenți ori absenți
+    private static final List<PlayerStatus> ACTIVE =
+            List.of(PlayerStatus.JOINED, PlayerStatus.ATTENDED, PlayerStatus.NO_SHOW);
 
     private final LobbyRepository lobbyRepository;
     private final LobbyPlayerRepository lobbyPlayerRepository;
+    private final JoinRequestRepository joinRequestRepository;
     private final CatalogService catalogService;
     private final UserService userService;
     private final RatingService ratingService;
     private final LockDeadlineCalculator deadlineCalculator;
     private final PriceCalculator priceCalculator;
+    private final ApplicationEventPublisher events;
 
     public LobbyService(LobbyRepository lobbyRepository, LobbyPlayerRepository lobbyPlayerRepository,
-            CatalogService catalogService, UserService userService, RatingService ratingService,
-            LockDeadlineCalculator deadlineCalculator, PriceCalculator priceCalculator) {
+            JoinRequestRepository joinRequestRepository, CatalogService catalogService, UserService userService,
+            RatingService ratingService, LockDeadlineCalculator deadlineCalculator, PriceCalculator priceCalculator,
+            ApplicationEventPublisher events) {
+        this.events = events;
         this.lobbyRepository = lobbyRepository;
         this.lobbyPlayerRepository = lobbyPlayerRepository;
+        this.joinRequestRepository = joinRequestRepository;
         this.catalogService = catalogService;
         this.userService = userService;
         this.ratingService = ratingService;
@@ -114,6 +140,261 @@ public class LobbyService {
         }
     }
 
+    // ---------- cereri de alăturare ----------
+
+    @Transactional
+    public JoinRequestResult requestToJoin(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        if (isParticipant(lobbyId, userId)) {
+            throw new ApiException(HttpStatus.CONFLICT, "ALREADY_IN_LOBBY", "Ești deja în acest lobby.");
+        }
+        requireOpen(lobby);
+        if (LocalDateTime.now(ZONE).isAfter(lobby.getLockDeadline())) {
+            throw new ApiException(HttpStatus.CONFLICT, "JOIN_CLOSED", "Termenul de înscriere a trecut.");
+        }
+        requireFreeSlot(lobby);
+        if (joinRequestRepository.findByLobbyIdAndUserIdAndStatus(lobbyId, userId, JoinRequestStatus.PENDING).isPresent()) {
+            throw new ApiException(HttpStatus.CONFLICT, "ALREADY_REQUESTED", "Ai trimis deja o cerere.");
+        }
+
+        JoinRequest request = new JoinRequest();
+        request.setLobbyId(lobbyId);
+        request.setUserId(userId);
+        request = joinRequestRepository.save(request);
+        return new JoinRequestResult(request.getId(), request.getStatus().name());
+    }
+
+    @Transactional
+    public LobbyDetails acceptRequest(Long lobbyId, Long requestId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        JoinRequest request = getPendingRequest(lobbyId, requestId);
+        requireOpen(lobby);
+        requireFreeSlot(lobby);
+
+        request.setStatus(JoinRequestStatus.ACCEPTED);
+        request.setDecidedAt(Instant.now());
+
+        // cine a ieșit și revine are deja un rând în lobby_players (unic pe lobby + utilizator), îl refolosim
+        LobbyPlayer player = lobbyPlayerRepository.findByLobbyIdAndUserId(lobbyId, request.getUserId())
+                .orElseGet(LobbyPlayer::new);
+        player.setLobbyId(lobbyId);
+        player.setUserId(request.getUserId());
+        player.setStatus(PlayerStatus.JOINED);
+        player.setCancelledAt(null);
+        lobbyPlayerRepository.save(player);
+        events.publishEvent(new PlayerJoinedEvent(lobbyId, request.getUserId()));
+
+        return toDetails(lobby, userId);
+    }
+
+    @Transactional
+    public LobbyDetails rejectRequest(Long lobbyId, Long requestId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        JoinRequest request = getPendingRequest(lobbyId, requestId);
+        request.setStatus(JoinRequestStatus.REJECTED);
+        request.setDecidedAt(Instant.now());
+        return toDetails(lobby, userId);
+    }
+
+    // Ieșirea din lobby. Cine are doar o cerere în așteptare și-o retrage.
+    // Cât lobby-ul e OPEN ieșirea e gratuită; după confirmare e anulare târzie.
+    @Transactional
+    public LeaveResult leave(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        if (lobby.getCreatorId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "HOST_CANNOT_LEAVE",
+                    "Organizatorul nu poate ieși. Poate anula lobby-ul.");
+        }
+
+        LobbyPlayer player = lobbyPlayerRepository.findByLobbyIdAndUserId(lobbyId, userId)
+                .filter(p -> p.getStatus() == PlayerStatus.JOINED)
+                .orElse(null);
+        if (player == null) {
+            JoinRequest pending = joinRequestRepository
+                    .findByLobbyIdAndUserIdAndStatus(lobbyId, userId, JoinRequestStatus.PENDING)
+                    .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "NOT_PARTICIPANT",
+                            "Nu ești în acest lobby."));
+            pending.setStatus(JoinRequestStatus.WITHDRAWN);
+            pending.setDecidedAt(Instant.now());
+            return new LeaveResult(false);
+        }
+
+        boolean late = switch (lobby.getStatus()) {
+            case OPEN -> false;
+            case LOCKED -> true;
+            default -> throw new ApiException(HttpStatus.CONFLICT, "LOBBY_NOT_OPEN", "Lobby-ul s-a încheiat.");
+        };
+        player.setStatus(late ? PlayerStatus.CANCELLED_LATE : PlayerStatus.CANCELLED_FREE);
+        player.setCancelledAt(Instant.now());
+        // ratings (C) dă penalizarea dacă late e true
+        events.publishEvent(new PlayerCancelledEvent(lobbyId, userId, late));
+        return new LeaveResult(late);
+    }
+
+    // ---------- confirmare, anulare, încheiere ----------
+
+    // Organizatorul poate confirma oricând cât lobby-ul e deschis, chiar sub minim.
+    @Transactional
+    public LobbyDetails lock(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        requireOpen(lobby);
+        lockLobby(lobby);
+        return toDetails(lobby, userId);
+    }
+
+    // Anularea de către organizator; după confirmare primește penalizare (răspunsul are aceeași formă ca la leave).
+    @Transactional
+    public LeaveResult cancel(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        boolean late = switch (lobby.getStatus()) {
+            case OPEN -> false;
+            case LOCKED -> true;
+            default -> throw new ApiException(HttpStatus.CONFLICT, "LOBBY_NOT_OPEN", "Lobby-ul s-a încheiat deja.");
+        };
+        lobby.setStatus(LobbyStatus.CANCELLED);
+        events.publishEvent(new LobbyCancelledEvent(lobbyId, userId, late));
+        return new LeaveResult(late);
+    }
+
+    // Rulat de LobbyScheduler o dată pe minut.
+    @Transactional
+    public void processDeadlines() {
+        LocalDateTime now = LocalDateTime.now(ZONE);
+        lobbyRepository.findByStatusAndLockDeadlineLessThanEqual(LobbyStatus.OPEN, now)
+                .forEach(this::processDeadline);
+        lobbyRepository.findByStatusAndStartAtLessThanEqual(LobbyStatus.LOCKED, now.minus(MATCH_DURATION))
+                .forEach(lobby -> lobby.setStatus(LobbyStatus.FINISHED));
+    }
+
+    // La termen: cu minimul atins, lobby-ul se confirmă. Fără minim rămâne deschis
+    // (organizatorul vede „minimul nu a fost atins" și poate anula fără penalizare),
+    // iar dacă a venit ora meciului și tot nu e confirmat, se anulează.
+    private void processDeadline(Lobby lobby) {
+        if (occupied(lobby) >= lobby.getMinPlayers()) {
+            lockLobby(lobby);
+        } else if (!lobby.getStartAt().isAfter(LocalDateTime.now(ZONE))) {
+            lobby.setStatus(LobbyStatus.CANCELLED);
+            events.publishEvent(new LobbyCancelledEvent(lobby.getId(), lobby.getCreatorId(), false));
+        }
+    }
+
+    private void lockLobby(Lobby lobby) {
+        List<Long> playerIds = lobbyPlayerRepository.findByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED)
+                .stream().map(LobbyPlayer::getUserId).toList();
+        BigDecimal finalPrice = priceCalculator.pricePerPlayer(lobby.getFieldCost(), occupied(lobby));
+        lobby.setFinalPricePerPlayer(finalPrice);
+        lobby.setStatus(LobbyStatus.LOCKED);
+        lobby.setLockedAt(LocalDateTime.now(ZONE));
+        events.publishEvent(new LobbyLockedEvent(lobby.getId(), toLei(finalPrice), playerIds));
+    }
+
+    // După meci, organizatorul bifează cine a venit. Se poate face o singură dată.
+    // Organizatorul e considerat prezent; cine nu apare în listă e considerat prezent.
+    @Transactional
+    public LobbyDetails saveAttendance(Long lobbyId, Long userId, AttendanceRequest req) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        if (lobby.getStatus() != LobbyStatus.FINISHED) {
+            throw new ApiException(HttpStatus.CONFLICT, "LOBBY_NOT_FINISHED", "Prezența se salvează după meci.");
+        }
+        if (lobby.isAttendanceSaved()) {
+            throw new ApiException(HttpStatus.CONFLICT, "ATTENDANCE_ALREADY_SAVED", "Prezența a fost deja salvată.");
+        }
+
+        Map<Long, Boolean> present = new HashMap<>();
+        req.attendance().forEach(e -> present.put(e.userId(), e.present()));
+
+        List<LobbyPlayer> players = lobbyPlayerRepository.findByLobbyIdAndStatus(lobbyId, PlayerStatus.JOINED);
+        List<Long> presentIds = new ArrayList<>();
+        List<Long> absentIds = new ArrayList<>();
+        for (LobbyPlayer player : players) {
+            boolean isHostPlayer = player.getUserId().equals(lobby.getCreatorId());
+            boolean came = isHostPlayer || present.getOrDefault(player.getUserId(), true);
+            player.setStatus(came ? PlayerStatus.ATTENDED : PlayerStatus.NO_SHOW);
+            // organizatorul apare separat în eveniment (hostUserId), ca în docs/api.md
+            if (!isHostPlayer) {
+                (came ? presentIds : absentIds).add(player.getUserId());
+            }
+        }
+        lobby.setAttendanceSaved(true);
+
+        // ratings (C): crește prezențele, iar absenții primesc review automat de 1 stea
+        events.publishEvent(new AttendanceSavedEvent(lobbyId, lobby.getCreatorId(), presentIds, absentIds));
+        return toDetails(lobby, userId);
+    }
+
+    // ---------- simulare (doar profilul dev, prin DevLobbyController) ----------
+
+    @Transactional
+    public LobbyDetails simulatePassDeadline(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        requireOpen(lobby);
+        lobby.setLockDeadline(LocalDateTime.now(ZONE));
+        processDeadline(lobby);
+        return toDetails(lobby, userId);
+    }
+
+    @Transactional
+    public LobbyDetails simulateFinish(Long lobbyId, Long userId) {
+        Lobby lobby = getLobby(lobbyId);
+        requireHost(lobby, userId);
+        if (lobby.getStatus() != LobbyStatus.LOCKED) {
+            throw new ApiException(HttpStatus.CONFLICT, "LOBBY_NOT_LOCKED", "Confirmă lobby-ul înainte să îl închei.");
+        }
+        lobby.setStatus(LobbyStatus.FINISHED);
+        return toDetails(lobby, userId);
+    }
+
+    // Folosit și de chat (C): cine e în lobby, inclusiv după ce meciul s-a încheiat.
+    public boolean isParticipant(Long lobbyId, Long userId) {
+        return lobbyPlayerRepository.findByLobbyIdAndUserId(lobbyId, userId)
+                .map(p -> p.getStatus() == PlayerStatus.JOINED || p.getStatus() == PlayerStatus.ATTENDED)
+                .orElse(false);
+    }
+
+    private Lobby getLobby(Long lobbyId) {
+        return lobbyRepository.findById(lobbyId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Lobby-ul nu există."));
+    }
+
+    private JoinRequest getPendingRequest(Long lobbyId, Long requestId) {
+        JoinRequest request = joinRequestRepository.findById(requestId)
+                .filter(r -> r.getLobbyId().equals(lobbyId))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Cererea nu există."));
+        if (request.getStatus() != JoinRequestStatus.PENDING) {
+            throw new ApiException(HttpStatus.CONFLICT, "REQUEST_NOT_PENDING", "Cererea a fost deja rezolvată.");
+        }
+        return request;
+    }
+
+    private void requireHost(Lobby lobby, Long userId) {
+        if (!lobby.getCreatorId().equals(userId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "NOT_HOST", "Doar organizatorul poate face asta.");
+        }
+    }
+
+    private void requireOpen(Lobby lobby) {
+        if (lobby.getStatus() != LobbyStatus.OPEN) {
+            throw new ApiException(HttpStatus.CONFLICT, "LOBBY_NOT_OPEN", "Lobby-ul nu mai primește jucători.");
+        }
+    }
+
+    private void requireFreeSlot(Lobby lobby) {
+        if (occupied(lobby) >= lobby.getCapacity()) {
+            throw new ApiException(HttpStatus.CONFLICT, "LOBBY_FULL", "Lobby-ul este complet.");
+        }
+    }
+
+    private int occupied(Lobby lobby) {
+        long joined = lobbyPlayerRepository.countByLobbyIdAndStatusIn(lobby.getId(), ACTIVE);
+        return priceCalculator.occupiedSlots(lobby.getGuestCount(), joined);
+    }
+
     // ---------- citire ----------
 
     // Lobby-urile dintr-o zi, pentru lista de sub calendar. Cele anulate nu apar.
@@ -153,7 +434,7 @@ public class LobbyService {
         FieldDto field = catalogService.findField(lobby.getFieldId()).orElseThrow();
         CityDto city = catalogService.findCity(lobby.getCityId()).orElseThrow();
 
-        List<LobbyPlayer> joined = lobbyPlayerRepository.findByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED);
+        List<LobbyPlayer> joined = lobbyPlayerRepository.findByLobbyIdAndStatusIn(lobby.getId(), ACTIVE);
         int occupied = priceCalculator.occupiedSlots(lobby.getGuestCount(), joined.size());
         List<Double> ratings = joined.stream()
                 .map(p -> ratingService.getStats(p.getUserId()).average())
@@ -174,9 +455,7 @@ public class LobbyService {
     }
 
     public LobbyDetails getDetails(Long lobbyId, Long userId) {
-        Lobby lobby = lobbyRepository.findById(lobbyId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Lobby-ul nu există."));
-        return toDetails(lobby, userId);
+        return toDetails(getLobby(lobbyId), userId);
     }
 
     private LobbyDetails toDetails(Lobby lobby, Long userId) {
@@ -191,7 +470,7 @@ public class LobbyService {
         boolean deadlinePassed = now.isAfter(lobby.getLockDeadline());
 
         List<LobbyDetails.Participant> participants = lobbyPlayerRepository
-                .findByLobbyIdAndStatus(lobby.getId(), PlayerStatus.JOINED).stream()
+                .findByLobbyIdAndStatusIn(lobby.getId(), ACTIVE).stream()
                 .map(p -> toParticipant(p, lobby, locked))
                 .toList();
 
@@ -227,10 +506,24 @@ public class LobbyService {
                 finalPrice,
                 open && deadlinePassed && occupied < lobby.getMinPlayers(),
                 !open || freeSlots == 0 || deadlinePassed,
+                lobby.isAttendanceSaved(),
                 myState(lobby, userId),
                 isHost,
                 participants,
-                List.of()); // cererile de alăturare vin odată cu JoinRequest
+                isHost ? pendingRequests(lobby.getId()) : List.of());
+    }
+
+    // Cererile în așteptare, doar pentru organizator, cu ratingul fiecăruia
+    private List<LobbyDetails.PendingRequest> pendingRequests(Long lobbyId) {
+        return joinRequestRepository.findByLobbyIdAndStatusOrderByCreatedAtAsc(lobbyId, JoinRequestStatus.PENDING)
+                .stream()
+                .map(r -> {
+                    RatingStatsDto stats = ratingService.getStats(r.getUserId());
+                    return new LobbyDetails.PendingRequest(r.getId(), r.getUserId(),
+                            userService.getSummary(r.getUserId()).username(),
+                            stats.average(), stats.reliabilityPercent());
+                })
+                .toList();
     }
 
     private LobbyDetails.Participant toParticipant(LobbyPlayer player, Lobby lobby, boolean locked) {
@@ -243,7 +536,12 @@ public class LobbyService {
                 stats.average(),
                 stats.reviewCount(),
                 stats.reliabilityPercent(),
-                locked ? player.getPaymentMethod().name() : null);
+                locked ? player.getPaymentMethod().name() : null,
+                switch (player.getStatus()) {
+                    case ATTENDED -> true;
+                    case NO_SHOW -> false;
+                    default -> null;
+                });
     }
 
     // Media ratingurilor participanților care au deja rating, cu o zecimală.
@@ -255,14 +553,24 @@ public class LobbyService {
         return avg.isPresent() ? Math.round(avg.getAsDouble() * 10) / 10.0 : null;
     }
 
-    // NONE (nu are legătură cu lobby-ul), ACCEPTED (e în lobby), LEFT (a ieșit).
-    // PENDING și REJECTED apar odată cu cererile de alăturare.
+    // Starea mea în lobby: ACCEPTED (sunt în el), PENDING (am cerut), LEFT (am ieșit),
+    // REJECTED (organizatorul m-a refuzat) sau NONE. Ordinea contează: cine a ieșit și cere din nou e PENDING.
     private String myState(Lobby lobby, Long userId) {
-        return lobbyPlayerRepository.findByLobbyIdAndUserId(lobby.getId(), userId)
-                .map(p -> p.getStatus() == PlayerStatus.CANCELLED_FREE || p.getStatus() == PlayerStatus.CANCELLED_LATE
-                        ? "LEFT"
-                        : "ACCEPTED")
-                .orElse("NONE");
+        PlayerStatus player = lobbyPlayerRepository.findByLobbyIdAndUserId(lobby.getId(), userId)
+                .map(LobbyPlayer::getStatus)
+                .orElse(null);
+        JoinRequestStatus request = joinRequestRepository
+                .findFirstByLobbyIdAndUserIdOrderByCreatedAtDesc(lobby.getId(), userId)
+                .map(JoinRequest::getStatus)
+                .orElse(null);
+
+        if (player == PlayerStatus.JOINED || player == PlayerStatus.ATTENDED || player == PlayerStatus.NO_SHOW) {
+            return "ACCEPTED";
+        }
+        if (request == JoinRequestStatus.PENDING) return "PENDING";
+        if (player == PlayerStatus.CANCELLED_FREE || player == PlayerStatus.CANCELLED_LATE) return "LEFT";
+        if (request == JoinRequestStatus.REJECTED) return "REJECTED";
+        return "NONE";
     }
 
     private static Integer toLei(BigDecimal amount) {
