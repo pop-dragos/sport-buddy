@@ -1,0 +1,37 @@
+.pay-total {
+  margin: 10px 0 14px;
+}
+
+.pay-row {
+  flex-wrap: nowrap;
+}
+
+.pay-row .f {
+  flex: 1;
+}
+
+.pay-hint {
+  margin: 6px 0 10px;
+  font-size: 12px;
+}
+
+.pay-actions {
+  margin-top: 12px;
+}
+
+.pay-small {
+  font-size: 12px;
+}
+
+.pay-amount {
+  text-align: right;
+}
+
+.pay-link {
+  color: var(--tx);
+  text-decoration: none;
+}
+
+.pay-link:hover {
+  text-decoration: underline;
+}
