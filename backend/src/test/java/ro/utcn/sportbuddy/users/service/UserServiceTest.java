@@ -37,6 +37,7 @@ class UserServiceTest {
     private CatalogService catalog;
     private PasswordEncoder encoder;
     private AvatarStorage avatars;
+    private boolean friends;
 
     @TempDir
     java.nio.file.Path uploads;
@@ -52,12 +53,19 @@ class UserServiceTest {
         catalog = mock(CatalogService.class);
         encoder = new BCryptPasswordEncoder();
         avatars = new AvatarStorage(uploads.toString());
-        service = new UserService(users, userSports, settings, encoder, catalog, avatars);
+        friends = false;
+        @SuppressWarnings("unchecked")
+        org.springframework.beans.factory.ObjectProvider<FriendshipChecker> checker =
+                mock(org.springframework.beans.factory.ObjectProvider.class);
+        when(checker.getIfAvailable()).thenReturn((a, b) -> friends);
+        service = new UserService(users, userSports, settings, encoder, catalog, avatars, checker);
 
         ana = user(1L, "ana", "ana@demo.ro");
         when(users.findById(1L)).thenReturn(Optional.of(ana));
         when(userSports.findByUserId(1L)).thenReturn(List.of());
         when(catalog.findSport(any())).thenReturn(Optional.of(mock(SportDto.class)));
+        // ca repository-ul real: save întoarce entitatea salvată
+        when(settings.save(any())).thenAnswer(i -> i.getArgument(0));
     }
 
     private static User user(Long id, String username, String email) {
@@ -255,14 +263,14 @@ class UserServiceTest {
     @Test
     void publicProfileOfDeletedUserIsNotFound() {
         ana.setActive(false);
-        ApiException e = assertThrows(ApiException.class, () -> service.getPublicProfile(1L));
+        ApiException e = assertThrows(ApiException.class, () -> service.getPublicProfile(2L, 1L));
         assertEquals(HttpStatus.NOT_FOUND, e.getStatus());
     }
 
     @Test
     void publicProfileHidesEmailAndPhone() {
         ana.setPhone("0722123456");
-        var profile = service.getPublicProfile(1L);
+        var profile = service.getPublicProfile(2L, 1L);
         assertEquals("ana", profile.username());
         assertTrue(java.util.Arrays.stream(profile.getClass().getRecordComponents())
                 .noneMatch(c -> c.getName().equals("email") || c.getName().equals("phone")));
@@ -393,5 +401,66 @@ class UserServiceTest {
         assertEquals(Optional.of("gif"), UserService.imageExtension("GIF89a".getBytes()));
         assertEquals(Optional.of("webp"), UserService.imageExtension("RIFF0000WEBPVP8 ".getBytes()));
         assertEquals(Optional.empty(), UserService.imageExtension("RIFF0000WAVE".getBytes()));
+    }
+
+    // ---------- vizibilitatea profilului ----------
+
+    private void anaShowsProfileOnlyToFriends() {
+        UserSettings s = new UserSettings(1L);
+        s.setProfileVisibility(ProfileVisibility.FRIENDS);
+        when(settings.findById(1L)).thenReturn(Optional.of(s));
+    }
+
+    @Test
+    void friendsOnlyProfileIsRestrictedForStrangers() {
+        anaShowsProfileOnlyToFriends();
+        ana.setBio("Joc în weekend.");
+        ana.setCityId(4L);
+
+        var p = service.getPublicProfile(2L, 1L);
+
+        assertTrue(p.restricted());
+        assertEquals("ana", p.username());
+        assertNull(p.description());
+        assertNull(p.cityId());
+        assertTrue(p.sports().isEmpty());
+    }
+
+    @Test
+    void friendsOnlyProfileIsFullForFriends() {
+        anaShowsProfileOnlyToFriends();
+        ana.setBio("Joc în weekend.");
+        friends = true;
+
+        var p = service.getPublicProfile(2L, 1L);
+
+        assertFalse(p.restricted());
+        assertEquals("Joc în weekend.", p.description());
+    }
+
+    @Test
+    void ownProfileIsNeverRestricted() {
+        anaShowsProfileOnlyToFriends();
+        assertFalse(service.getPublicProfile(1L, 1L).restricted());
+    }
+
+    @Test
+    void similarUsersShareASportAndSameCityComesFirst() {
+        ana.setCityId(4L);
+        when(userSports.findByUserId(1L)).thenReturn(List.of(new UserSport(1L, 1L, SportLevel.BEGINNER)));
+        when(userSports.findBySportIdIn(List.of(1L))).thenReturn(List.of(
+                new UserSport(1L, 1L, SportLevel.BEGINNER),
+                new UserSport(2L, 1L, SportLevel.BEGINNER),
+                new UserSport(3L, 1L, SportLevel.ADVANCED),
+                new UserSport(5L, 1L, SportLevel.ADVANCED)));
+        User other = user(2L, "bogdan", "b@demo.ro");
+        other.setCityId(9L);
+        User sameCity = user(3L, "ioana", "i@demo.ro");
+        sameCity.setCityId(4L);
+        User deleted = user(5L, "sters-5", "s@demo.ro");
+        deleted.setActive(false);
+        when(users.findAllById(any())).thenReturn(List.of(other, sameCity, deleted));
+
+        assertEquals(List.of(3L, 2L), service.findSimilarUsers(1L));
     }
 }

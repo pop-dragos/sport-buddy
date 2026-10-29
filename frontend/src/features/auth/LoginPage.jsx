@@ -26,8 +26,18 @@ function writeRemembered(identifier, remember) {
   }
 }
 
+// Înapoi pe pagina de dinainte doar dacă e a ta (sesiunea ți-a expirat) sau nu știm a cui e
+// (ai deschis direct un link). Pagina altui utilizator, rămasă după ce el a ieșit, nu contează.
+function returnPath(state, user) {
+  const from = state?.from
+  if (!from) return '/'
+  const owner = state.fromUserId
+  if (owner != null && owner !== user.id) return '/'
+  return from.pathname + (from.search ?? '')
+}
+
 export default function LoginPage() {
-  const { status, login, loginWithProvider } = useAuth()
+  const { status, user, login, loginWithProvider } = useAuth()
   const location = useLocation()
 
   const [mode, setMode] = useState('in')
@@ -40,7 +50,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false)
 
   if (status === 'authed') {
-    return <Navigate to={location.state?.from?.pathname || '/'} replace />
+    return <Navigate to={returnPath(location.state, user)} replace />
   }
 
   function switchMode(next) {

@@ -1,5 +1,6 @@
 package ro.utcn.sportbuddy.users.service;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,16 +29,20 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final CatalogService catalogService;
     private final AvatarStorage avatarStorage;
+    // ObjectProvider: implementarea (din friends) se cere abia la folosire, deci nu apare o dependență circulară
+    private final ObjectProvider<FriendshipChecker> friendshipChecker;
 
     public UserService(UserRepository userRepository, UserSportRepository userSportRepository,
                        UserSettingsRepository userSettingsRepository, PasswordEncoder passwordEncoder,
-                       CatalogService catalogService, AvatarStorage avatarStorage) {
+                       CatalogService catalogService, AvatarStorage avatarStorage,
+                       ObjectProvider<FriendshipChecker> friendshipChecker) {
         this.userRepository = userRepository;
         this.userSportRepository = userSportRepository;
         this.userSettingsRepository = userSettingsRepository;
         this.passwordEncoder = passwordEncoder;
         this.catalogService = catalogService;
         this.avatarStorage = avatarStorage;
+        this.friendshipChecker = friendshipChecker;
     }
 
     // ---------- citire ----------
@@ -237,12 +242,66 @@ public class UserService {
         return true;
     }
 
-    @Transactional(readOnly = true)
-    public PublicProfile getPublicProfile(Long id) {
-        // Respectarea setării profileVisibility = FRIENDS vine odată cu modulul friends.
+    // Nu e readOnly: settingsOf poate crea setările implicite ale unui utilizator vechi.
+    @Transactional
+    public PublicProfile getPublicProfile(Long viewerId, Long id) {
         User u = userRepository.findById(id).filter(User::isActive).orElseThrow(this::notFound);
+        if (!viewerId.equals(id) && settingsOf(id).getProfileVisibility() == ProfileVisibility.FRIENDS
+                && !areFriends(viewerId, id)) {
+            return new PublicProfile(u.getId(), u.getUsername(), u.getFullName(), avatarUrl(u),
+                    null, null, null, List.of(), true);
+        }
+        return toPublic(u, sportsOf(u.getId()));
+    }
+
+    // Pentru listele din alte module (prieteni, sugestii): doar conturile active, fără verificarea vizibilității,
+    // pentru că acolo se arată numai nume, oraș și sporturi.
+    @Transactional(readOnly = true)
+    public Map<Long, PublicProfile> findProfiles(Collection<Long> ids) {
+        Map<Long, PublicProfile> profiles = new LinkedHashMap<>();
+        if (ids.isEmpty()) return profiles;
+        Map<Long, List<SportLevelDto>> sports = new HashMap<>();
+        for (UserSport s : userSportRepository.findByUserIdIn(ids)) {
+            sports.computeIfAbsent(s.getUserId(), k -> new ArrayList<>())
+                    .add(new SportLevelDto(s.getSportId(), s.getDeclaredLevel()));
+        }
+        for (User u : userRepository.findAllById(ids)) {
+            if (u.isActive()) profiles.put(u.getId(), toPublic(u, sports.getOrDefault(u.getId(), List.of())));
+        }
+        return profiles;
+    }
+
+    // Utilizatori activi care joacă măcar un sport comun cu mine; cei din orașul meu primii.
+    @Transactional(readOnly = true)
+    public List<Long> findSimilarUsers(Long userId) {
+        User me = getEntity(userId);
+        List<Long> mySports = sportsOf(userId).stream().map(SportLevelDto::sportId).toList();
+        if (mySports.isEmpty()) return List.of();
+        Set<Long> candidates = new LinkedHashSet<>();
+        for (UserSport s : userSportRepository.findBySportIdIn(mySports)) {
+            if (!s.getUserId().equals(userId)) candidates.add(s.getUserId());
+        }
+        List<User> users = userRepository.findAllById(candidates).stream().filter(User::isActive).toList();
+        return users.stream()
+                .sorted(Comparator.comparing((User u) -> !Objects.equals(u.getCityId(), me.getCityId()))
+                        .thenComparing(User::getId))
+                .map(User::getId)
+                .toList();
+    }
+
+    @Transactional
+    public WhoCanAddMe whoCanAddMe(Long userId) {
+        return settingsOf(userId).getWhoCanAddMe();
+    }
+
+    private boolean areFriends(Long a, Long b) {
+        FriendshipChecker checker = friendshipChecker.getIfAvailable();
+        return checker != null && checker.areFriends(a, b);
+    }
+
+    private PublicProfile toPublic(User u, List<SportLevelDto> sports) {
         return new PublicProfile(u.getId(), u.getUsername(), u.getFullName(), avatarUrl(u), u.getCityId(),
-                u.getBio(), u.getCreatedAt().atZone(ZONE).toLocalDate(), sportsOf(u.getId()));
+                u.getBio(), u.getCreatedAt().atZone(ZONE).toLocalDate(), sports, false);
     }
 
     // ---------- setări ----------

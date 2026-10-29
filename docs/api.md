@@ -115,9 +115,10 @@ Nu există câmp pentru rating: ratingul nu se poate ascunde.
 {
   "id": 12, "username": "bogdan", "fullName": "Bogdan Pop", "avatarUrl": null,
   "cityId": 4, "description": "Joc seara.", "memberSince": "2026-03-01",
-  "sports": [ { "sportId": 3, "level": "ADVANCED" } ]
+  "sports": [ { "sportId": 3, "level": "ADVANCED" } ], "restricted": false
 }
 ```
+Dacă utilizatorul are `profileVisibility = FRIENDS` și cel care se uită nu îi este prieten, răspunsul are `"restricted": true` și conține doar `id`, `username`, `fullName`, `avatarUrl` (restul câmpurilor sunt goale, `sports` este o listă goală).
 Rating, fiabilitate și etichete vin din `GET /ratings/users/{id}` (C). Numărul de meciuri vine din `GET /lobbies/stats/{userId}` (B). Starea prieteniei vine din `GET /friends/status/{id}` (A, mai jos).
 
 ### Friends
@@ -139,12 +140,15 @@ Rating, fiabilitate și etichete vin din `GET /ratings/users/{id}` (C). Numărul
 Element din lista de prieteni și din sugestii:
 ```json
 { "userId": 12, "username": "bogdan", "fullName": "Bogdan Pop", "avatarUrl": null,
-  "cityName": "Baia Mare", "sportCodes": ["football", "tennis"], "matchesTogether": 3 }
+  "cityName": "Baia Mare", "sportCodes": ["football", "tennis"], "matchesTogether": 3, "rating": 4.1 }
 ```
-`GET /friends/requests` răspunde `{ "incoming": [ { "requestId": 5, "user": {...}, "createdAt": "..." } ], "outgoing": [ ... ] }`.
-`GET /friends/status/{userId}` răspunde `{ "status": "NONE" }`, valori: `NONE`, `PENDING_SENT`, `PENDING_RECEIVED`, `FRIENDS`.
-Mesaj direct: `{ "id": 90, "senderId": 7, "message": "Salut", "sentAt": "2026-10-19T12:00:00" }`. `after` întoarce doar mesajele cu id mai mare. Mesaje se pot trimite doar între prieteni (`403 NOT_FRIENDS`).
-Erori la cerere de prietenie: `409 ALREADY_FRIENDS`, `409 REQUEST_EXISTS`, `403 FRIEND_REQUESTS_DISABLED` (conform setării `whoCanAddMe`).
+`rating` vine din `RatingService` (C), gol pentru utilizatorii noi. `matchesTogether` este gol până când `LobbyService` (B) oferă meciurile jucate împreună. Până atunci, sugestiile sunt jucători activi cu cel puțin un sport comun (cei din orașul meu primii), fără prietenii și cererile în așteptare.
+`GET /friends/requests` răspunde `{ "incoming": [ { "requestId": 5, "user": {...}, "createdAt": "..." } ], "outgoing": [ ... ] }` (`user` are forma de mai sus).
+`GET /friends/status/{userId}` răspunde `{ "status": "PENDING_SENT", "requestId": 5 }`, valori: `NONE`, `PENDING_SENT`, `PENDING_RECEIVED`, `FRIENDS`. `requestId` apare doar la cele două stări `PENDING_*`, ca profilul să poată anula sau accepta cererea.
+`POST /friends/requests` răspunde `201` cu aceeași formă ca `status`: `PENDING_SENT` (cerere nouă) sau `FRIENDS` (dacă celălalt îmi trimisese deja o cerere, a mea o acceptă). O cerere refuzată mai demult nu blochează una nouă.
+`accept`, `reject`, `DELETE /friends/requests/{id}` și `DELETE /friends/{userId}` răspund `204`. Doar destinatarul acceptă sau refuză, doar expeditorul anulează (altfel `404`); o cerere deja rezolvată dă `409 REQUEST_NOT_PENDING`.
+Mesaj direct: `{ "id": 90, "senderId": 7, "message": "Salut", "sentAt": "2026-10-19T12:00:00" }`. Fără `after` vin ultimele 100 de mesaje, în ordine cronologică; cu `after` doar mesajele cu id mai mare. Citirea marchează mesajele primite ca citite. Mesaje se pot trimite doar între prieteni (`403 NOT_FRIENDS`).
+Erori la cerere de prietenie: `400` (cerere către tine), `404` (utilizator inexistent sau șters), `409 ALREADY_FRIENDS`, `409 REQUEST_EXISTS`, `403 FRIEND_REQUESTS_DISABLED` (conform setării `whoCanAddMe`: `NOBODY`, sau `FRIENDS_OF_FRIENDS` fără niciun prieten comun).
 
 ### Feed
 

@@ -72,6 +72,6 @@ public class UserController {
 
     @GetMapping("/{id}")
     public PublicProfile profile(@PathVariable Long id) {
-        return userService.getPublicProfile(id);
+        return userService.getPublicProfile(CurrentUser.id(), id);
     }
 }
