@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import SportIcon from '../../shared/SportIcon'
 import { formatDay, formatRating, formatTime } from './format'
 
 export default function RecommendedCard({ lobbies }) {
@@ -11,7 +12,10 @@ export default function RecommendedCard({ lobbies }) {
             {lobbies.map((l) => (
                 <div key={l.id} className="pl">
                     <div>
-                        <b>{l.sportName}</b> · {formatDay(l.dateTime)} {formatTime(l.dateTime)}
+                        <div className="home-sport">
+                            <SportIcon type={l.sportCode} />
+                            <b>{l.sportName}</b> · {formatDay(l.dateTime)} {formatTime(l.dateTime)}
+                        </div>
                         <div className="mu">
                             {l.fieldName} · liber: {l.freeSlots} · nivel {formatRating(l.averageRating)}
                         </div>
