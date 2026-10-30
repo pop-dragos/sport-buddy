@@ -14,6 +14,7 @@ import ro.utcn.sportbuddy.friends.model.Friendship;
 import ro.utcn.sportbuddy.friends.model.FriendshipStatus;
 import ro.utcn.sportbuddy.friends.repository.DirectMessageRepository;
 import ro.utcn.sportbuddy.friends.repository.FriendshipRepository;
+import ro.utcn.sportbuddy.lobbies.service.LobbyService;
 import ro.utcn.sportbuddy.ratings.service.RatingService;
 import ro.utcn.sportbuddy.users.dto.PublicProfile;
 import ro.utcn.sportbuddy.users.dto.SportLevelDto;
@@ -39,14 +40,17 @@ public class FriendService implements FriendshipChecker {
     private final UserService userService;
     private final CatalogService catalogService;
     private final RatingService ratingService;
+    private final LobbyService lobbyService;
 
     public FriendService(FriendshipRepository friendshipRepository, DirectMessageRepository messageRepository,
-                         UserService userService, CatalogService catalogService, RatingService ratingService) {
+                         UserService userService, CatalogService catalogService, RatingService ratingService,
+                         LobbyService lobbyService) {
         this.friendshipRepository = friendshipRepository;
         this.messageRepository = messageRepository;
         this.userService = userService;
         this.catalogService = catalogService;
         this.ratingService = ratingService;
+        this.lobbyService = lobbyService;
     }
 
     // ---------- starea prieteniei ----------
@@ -167,7 +171,7 @@ public class FriendService implements FriendshipChecker {
     @Transactional(readOnly = true)
     public List<FriendItem> listFriends(Long me, String query) {
         String q = normalize(query);
-        return toItems(friendIds(me)).stream()
+        return toItems(me, friendIds(me)).stream()
                 .filter(f -> q.isEmpty() || normalize(f.username()).contains(q) || normalize(f.fullName()).contains(q))
                 .sorted(Comparator.comparing(f -> normalize(f.fullName())))
                 .toList();
@@ -182,19 +186,32 @@ public class FriendService implements FriendshipChecker {
         return new FriendRequests(toRequestItems(me, incoming), toRequestItems(me, outgoing));
     }
 
-    // Provizoriu: oameni cu un sport comun, cei din orașul meu primii. Când lobbies oferă colegii de meci,
-    // sugestiile vor veni de acolo, cum cere brief-ul („din lobby-urile tale”).
+    // „Posibili cunoscuți”: întâi oamenii cu care am jucat în lobby-uri (cei cu mai multe meciuri împreună
+    // primii), apoi, până la MAX_SUGGESTIONS, jucători cu un sport comun, ca lista să nu fie goală la conturile noi.
+    // Fără prieteni și fără cererile în așteptare; o cerere refuzată nu scoate pe nimeni din sugestii.
     @Transactional(readOnly = true)
     public List<FriendItem> suggestions(Long me) {
         Set<Long> excluded = new HashSet<>();
         for (Friendship f : friendshipRepository.findInvolving(me)) {
             if (f.getStatus() != FriendshipStatus.DECLINED) excluded.add(f.otherThan(me));
         }
-        List<Long> ids = userService.findSimilarUsers(me).stream()
+
+        List<Long> coPlayers = lobbyService.coPlayerIds(me).stream()
                 .filter(id -> !excluded.contains(id))
-                .limit(MAX_SUGGESTIONS)
+                .sorted()
                 .toList();
-        return toItems(ids);
+        List<FriendItem> result = new ArrayList<>(toItems(me, coPlayers));
+        result.sort(Comparator.comparing((FriendItem f) -> f.matchesTogether() == null ? 0 : f.matchesTogether())
+                .reversed());
+        if (result.size() >= MAX_SUGGESTIONS) return result.subList(0, MAX_SUGGESTIONS);
+
+        Set<Long> taken = new HashSet<>(coPlayers);
+        List<Long> similar = userService.findSimilarUsers(me).stream()
+                .filter(id -> !excluded.contains(id) && !taken.contains(id))
+                .limit(MAX_SUGGESTIONS - result.size())
+                .toList();
+        result.addAll(toItems(me, similar));
+        return result;
     }
 
     // ---------- mesaje directe ----------
@@ -240,7 +257,7 @@ public class FriendService implements FriendshipChecker {
 
     private List<FriendRequestItem> toRequestItems(Long me, List<Friendship> requests) {
         Map<Long, FriendItem> users = new HashMap<>();
-        for (FriendItem item : toItems(requests.stream().map(f -> f.otherThan(me)).toList())) {
+        for (FriendItem item : toItems(me, requests.stream().map(f -> f.otherThan(me)).toList())) {
             users.put(item.userId(), item);
         }
         return requests.stream()
@@ -249,21 +266,25 @@ public class FriendService implements FriendshipChecker {
                 .toList();
     }
 
-    // Conturile șterse dispar din liste (findProfiles întoarce doar utilizatori activi).
-    private List<FriendItem> toItems(Collection<Long> userIds) {
+    // Conturile șterse dispar din liste (findProfiles întoarce doar utilizatori activi). Ordinea e cea din userIds.
+    // matchesTogether: meciurile încheiate jucate de mine împreună cu fiecare (din lobbies).
+    private List<FriendItem> toItems(Long me, Collection<Long> userIds) {
         if (userIds.isEmpty()) return List.of();
         Map<Long, String> sportCodes = new HashMap<>();
         for (SportDto s : catalogService.getSports()) sportCodes.put(s.id(), s.code());
         Map<Long, String> cityNames = new HashMap<>();
+        Map<Long, PublicProfile> profiles = userService.findProfiles(userIds);
 
         List<FriendItem> items = new ArrayList<>();
-        for (PublicProfile p : userService.findProfiles(userIds).values()) {
+        for (Long id : userIds) {
+            PublicProfile p = profiles.get(id);
+            if (p == null) continue;
             String city = p.cityId() == null ? null : cityNames.computeIfAbsent(p.cityId(),
-                    id -> catalogService.findCity(id).map(CityDto::name).orElse(null));
+                    cityId -> catalogService.findCity(cityId).map(CityDto::name).orElse(null));
             List<String> sports = p.sports().stream().map(SportLevelDto::sportId)
                     .map(sportCodes::get).filter(Objects::nonNull).toList();
             items.add(new FriendItem(p.id(), p.username(), p.fullName(), p.avatarUrl(), city, sports,
-                    null, ratingService.getStats(p.id()).average()));
+                    lobbyService.stats(p.id(), me).matchesTogether(), ratingService.getStats(p.id()).average()));
         }
         return items;
     }

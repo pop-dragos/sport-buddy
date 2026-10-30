@@ -111,7 +111,7 @@ export default function FriendsPage() {
 
       <div className="card">
         <b>Posibili cunoscuți</b>
-        <div className="mu">Jucători cu sporturi în comun cu tine</div>
+        <div className="mu">Jucători din lobby-urile tale și cu sporturi comune</div>
         {suggestions.length === 0 && <div className="mu">Nimeni momentan.</div>}
         {suggestions.map((s) => (
           <FriendRow key={s.userId} friend={s} sportNames={sportNames}>

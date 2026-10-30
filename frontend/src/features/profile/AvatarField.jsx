@@ -3,9 +3,7 @@ import { errorMessage } from '../../api/http'
 import { deleteAvatar, uploadAvatar } from '../../api/users'
 import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
-
-const MAX_BYTES = 2 * 1024 * 1024
-const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+import { AVATAR_TYPES, avatarProblem } from './avatarRules'
 
 // Poza se trimite imediat după alegere; serverul verifică din nou tipul și mărimea.
 export default function AvatarField() {
@@ -29,8 +27,8 @@ export default function AvatarField() {
     const file = e.target.files[0]
     e.target.value = ''
     if (!file) return
-    if (!ACCEPTED.includes(file.type)) return setError('Sunt acceptate doar imagini PNG, JPG, WebP sau GIF.')
-    if (file.size > MAX_BYTES) return setError('Imaginea poate avea maximum 2 MB.')
+    const problem = avatarProblem(file)
+    if (problem) return setError(problem)
     run(() => uploadAvatar(file))
   }
 
@@ -47,7 +45,7 @@ export default function AvatarField() {
             Șterge poza
           </button>
         )}
-        <input ref={input} type="file" accept={ACCEPTED.join(',')} className="hide" onChange={pick} />
+        <input ref={input} type="file" accept={AVATAR_TYPES.join(',')} className="hide" onChange={pick} />
       </div>
       {error && <div className="err">{error}</div>}
     </div>

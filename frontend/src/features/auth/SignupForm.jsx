@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
-import { getSports } from '../../api/catalog'
+import { useEffect, useRef, useState } from 'react'
+import { getCities, getSports } from '../../api/catalog'
 import { errorMessage } from '../../api/http'
+import { uploadAvatar } from '../../api/users'
+import { AVATAR_TYPES, avatarProblem } from '../profile/avatarRules'
 import { useAuth } from './useAuth'
 import PasswordInput from './PasswordInput'
 
@@ -12,17 +14,44 @@ const DEFAULT_LEVEL = 'INTERMEDIATE'
 
 // social: null pentru cont cu email și parolă, sau { provider, fullName, email } pentru Google / iCloud
 export default function SignupForm({ social }) {
-  const { register } = useAuth()
+  const { register, updateUser } = useAuth()
 
   const [fullName, setFullName] = useState(social?.fullName ?? '')
   const [email, setEmail] = useState(social?.email ?? '')
   const [password, setPassword] = useState('')
   const [age, setAge] = useState('')
   const [phone, setPhone] = useState('')
+  const [cityId, setCityId] = useState('')
+  const [cities, setCities] = useState([])
+  // poza aleasă și previzualizarea ei (URL local, din browser)
+  const [photo, setPhoto] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const photoInput = useRef(null)
   const [sportIds, setSportIds] = useState([])
   const [sports, setSports] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // GET /catalog/cities e public, ca și sporturile
+  useEffect(() => {
+    let cancelled = false
+    getCities().then((c) => { if (!cancelled) setCities(c) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  // URL-ul previzualizării ocupă memorie până e eliberat
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
+
+  function pickPhoto(e) {
+    const file = e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+    const problem = avatarProblem(file)
+    if (problem) return setError(problem)
+    setError('')
+    setPhoto(file)
+    setPreview(URL.createObjectURL(file))
+  }
 
   // GET /catalog/sports e public, deci merge și înainte de conectare
   useEffect(() => {
@@ -65,8 +94,12 @@ export default function SignupForm({ social }) {
         ...(social ? { authProvider: social.provider } : { password }),
         age: Number(age),
         phone: phone.trim() || undefined,
+        ...(cityId && { cityId: Number(cityId) }),
         sports: sportIds.map((sportId) => ({ sportId, level: DEFAULT_LEVEL }))
       })
+      // Poza se încarcă după crearea contului, cu token-ul primit. Tipul și mărimea au fost verificate la alegere;
+      // dacă totuși nu reușește, contul rămâne creat și poza se poate pune din Setări.
+      if (photo) uploadAvatar(photo).then(updateUser).catch(() => {})
     } catch (err) {
       setError(errorMessage(err))
       setBusy(false)
@@ -127,6 +160,26 @@ export default function SignupForm({ social }) {
         <div className="mu">Le poți completa mai târziu, din setări.</div>
       </div>
       <input type="tel" placeholder="Număr de telefon" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      <select value={cityId} onChange={(e) => setCityId(e.target.value)} aria-label="Oraș">
+        <option value="">Oraș</option>
+        {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+      <div className="r" style={{ flexWrap: 'nowrap' }}>
+        {preview ? (
+          <img className="av" src={preview} alt="" style={{ width: 44, height: 44, objectFit: 'cover' }} />
+        ) : (
+          <span className="av" style={{ width: 44, height: 44 }}>+</span>
+        )}
+        <button type="button" className="b o" onClick={() => photoInput.current.click()}>
+          {photo ? 'Schimbă poza' : 'Alege o poză'}
+        </button>
+        {photo && (
+          <button type="button" className="b o" onClick={() => { setPhoto(null); setPreview(null) }}>
+            Scoate poza
+          </button>
+        )}
+        <input ref={photoInput} type="file" accept={AVATAR_TYPES.join(',')} className="hide" onChange={pickPhoto} />
+      </div>
 
       {error && <div className="err">{error}</div>}
       <button type="button" className="b" disabled={busy} onClick={submit}>Creează contul</button>
