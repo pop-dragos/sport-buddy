@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
 import { getFriends } from '../../api/friends'
-import { getMyLobbies } from '../../api/lobbies'
+import { getUserLobbies, getUserStats } from '../../api/lobbies'
 import { getUserRating } from '../../api/ratings'
 import { getProfile } from '../../api/users'
 import Avatar from '../../shared/Avatar'
@@ -27,17 +27,19 @@ function ProfileView({ id }) {
   const [other, setOther] = useState(null)
   const [rating, setRating] = useState(null)
   const [friendCount, setFriendCount] = useState(null)
-  // meciurile încheiate; deocamdată doar pentru profilul meu (pentru alții lipsește /lobbies/by-user)
-  const [finished, setFinished] = useState(null)
+  // { matchesPlayed, matchesTogether } și lista de jos: pe profilul meu meciurile mele, pe al altcuiva cele împreună
+  const [stats, setStats] = useState(null)
+  const [matches, setMatches] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let cancelled = false
     const ignore = () => {}
     getUserRating(id).then((r) => { if (!cancelled) setRating(r) }).catch(ignore)
+    getUserStats(id).then((s) => { if (!cancelled) setStats(s) }).catch(ignore)
+    getUserLobbies(id, RECENT_MATCHES).then((l) => { if (!cancelled) setMatches(l) }).catch(ignore)
     if (isMe) {
       getFriends().then((f) => { if (!cancelled) setFriendCount(f.length) }).catch(ignore)
-      getMyLobbies('FINISHED').then((l) => { if (!cancelled) setFinished(l) }).catch(ignore)
     } else {
       getProfile(id)
         .then((p) => { if (!cancelled) setOther(p) })
@@ -103,9 +105,9 @@ function ProfileView({ id }) {
 
       <div className="g" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         {[
-          [finished?.length ?? '–', 'Meciuri'],
+          [stats?.matchesPlayed ?? '–', 'Meciuri'],
           [rating?.average != null ? rating.average.toFixed(1) : '–', 'Rating'],
-          isMe ? [friendCount ?? '–', 'Prieteni'] : ['–', 'Meciuri împreună']
+          isMe ? [friendCount ?? '–', 'Prieteni'] : [stats?.matchesTogether ?? '–', 'Meciuri împreună']
         ].map(([value, label]) => (
           <div className="card" key={label} style={{ textAlign: 'center' }}>
             <b style={{ fontSize: 20 }}>{value}</b>
@@ -139,7 +141,7 @@ function ProfileView({ id }) {
       </div>
 
       <b style={{ display: 'block', margin: '4px 0 8px' }}>{isMe ? 'Meciurile mele' : 'Meciuri împreună'}</b>
-      {(finished ?? []).slice(0, RECENT_MATCHES).map((l) => (
+      {(matches ?? []).map((l) => (
         <div className="card" key={l.id}>
           <div className="top">
             <div>
@@ -150,7 +152,7 @@ function ProfileView({ id }) {
           </div>
         </div>
       ))}
-      {(finished ?? []).length === 0 && <div className="card mu">Nimic de arătat.</div>}
+      {(matches ?? []).length === 0 && <div className="card mu">Nimic de arătat.</div>}
     </div>
   )
 }

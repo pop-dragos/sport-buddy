@@ -142,7 +142,8 @@ Element din lista de prieteni și din sugestii:
 { "userId": 12, "username": "bogdan", "fullName": "Bogdan Pop", "avatarUrl": null,
   "cityName": "Baia Mare", "sportCodes": ["football", "tennis"], "matchesTogether": 3, "rating": 4.1 }
 ```
-`rating` vine din `RatingService` (C), gol pentru utilizatorii noi. `matchesTogether` este gol până când `LobbyService` (B) oferă meciurile jucate împreună. Până atunci, sugestiile sunt jucători activi cu cel puțin un sport comun (cei din orașul meu primii), fără prietenii și cererile în așteptare.
+`rating` vine din `RatingService` (C), gol pentru utilizatorii noi. `matchesTogether` (meciurile încheiate jucate împreună cu mine) vine din `LobbyService.stats` (B).
+Sugestiile („Posibili cunoscuți"): întâi jucătorii din lobby-urile mele (`LobbyService.coPlayerIds`), cei cu mai multe meciuri împreună primii; apoi, până la 10, jucători activi cu cel puțin un sport comun (cei din orașul meu primii). Fără prieteni și fără cererile în așteptare.
 `GET /friends/requests` răspunde `{ "incoming": [ { "requestId": 5, "user": {...}, "createdAt": "..." } ], "outgoing": [ ... ] }` (`user` are forma de mai sus).
 `GET /friends/status/{userId}` răspunde `{ "status": "PENDING_SENT", "requestId": 5 }`, valori: `NONE`, `PENDING_SENT`, `PENDING_RECEIVED`, `FRIENDS`. `requestId` apare doar la cele două stări `PENDING_*`, ca profilul să poată anula sau accepta cererea.
 `POST /friends/requests` răspunde `201` cu aceeași formă ca `status`: `PENDING_SENT` (cerere nouă) sau `FRIENDS` (dacă celălalt îmi trimisese deja o cerere, a mea o acceptă). O cerere refuzată mai demult nu blochează una nouă.

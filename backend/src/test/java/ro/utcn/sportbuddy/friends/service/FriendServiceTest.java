@@ -14,6 +14,8 @@ import ro.utcn.sportbuddy.friends.model.Friendship;
 import ro.utcn.sportbuddy.friends.model.FriendshipStatus;
 import ro.utcn.sportbuddy.friends.repository.DirectMessageRepository;
 import ro.utcn.sportbuddy.friends.repository.FriendshipRepository;
+import ro.utcn.sportbuddy.lobbies.dto.LobbyStats;
+import ro.utcn.sportbuddy.lobbies.service.LobbyService;
 import ro.utcn.sportbuddy.ratings.dto.RatingStatsDto;
 import ro.utcn.sportbuddy.ratings.service.RatingService;
 import ro.utcn.sportbuddy.users.dto.PublicProfile;
@@ -40,6 +42,7 @@ class FriendServiceTest {
     private UserService users;
     private CatalogService catalog;
     private RatingService ratings;
+    private LobbyService lobbies;
     private FriendService service;
 
     @BeforeEach
@@ -49,7 +52,8 @@ class FriendServiceTest {
         users = mock(UserService.class);
         catalog = mock(CatalogService.class);
         ratings = mock(RatingService.class);
-        service = new FriendService(friendships, messages, users, catalog, ratings);
+        lobbies = mock(LobbyService.class);
+        service = new FriendService(friendships, messages, users, catalog, ratings, lobbies);
 
         when(users.isActive(anyLong())).thenReturn(true);
         when(users.whoCanAddMe(anyLong())).thenReturn(WhoCanAddMe.EVERYONE);
@@ -58,6 +62,8 @@ class FriendServiceTest {
         when(friendships.save(any())).thenAnswer(i -> withId(i.getArgument(0), 100L));
         when(catalog.getSports()).thenReturn(List.of(new SportDto(1L, "football", "Fotbal", 10, "Teren", false)));
         when(ratings.getStats(anyLong())).thenAnswer(i -> RatingStatsDto.newUser(i.getArgument(0)));
+        when(lobbies.coPlayerIds(anyLong())).thenReturn(Set.of());
+        when(lobbies.stats(anyLong(), anyLong())).thenReturn(new LobbyStats(0, 0));
     }
 
     private static Friendship withId(Friendship f, Long id) {
@@ -252,7 +258,7 @@ class FriendServiceTest {
         assertEquals(1, found.size());
         assertEquals("Ștefan Luca", found.getFirst().fullName());
         assertEquals(List.of("football"), found.getFirst().sportCodes());
-        assertNull(found.getFirst().matchesTogether());
+        assertEquals(0, found.getFirst().matchesTogether());
     }
 
     @Test
@@ -302,6 +308,56 @@ class FriendServiceTest {
 
         verify(messages).markRead(eq(BOGDAN), eq(ANA), any());
         verify(messages, never()).findLatest(anyLong(), anyLong(), any());
+    }
+
+    // ---------- legătura cu lobby-urile ----------
+
+    private Map<Long, PublicProfile> profilesFor(Long... ids) {
+        Map<Long, PublicProfile> m = new LinkedHashMap<>();
+        for (Long id : ids) m.put(id, profile(id, "u" + id, "Utilizator " + id));
+        return m;
+    }
+
+    @Test
+    void suggestionsStartWithCoPlayersMostMatchesFirstThenSimilar() {
+        when(friendships.findInvolving(ANA)).thenReturn(List.of(accepted(5L, ANA, BOGDAN)));
+        // Bogdan e deja prieten, deci nu apare deși a jucat cu Ana
+        when(lobbies.coPlayerIds(ANA)).thenReturn(Set.of(BOGDAN, IOANA, VLAD));
+        when(lobbies.stats(IOANA, ANA)).thenReturn(new LobbyStats(4, 1));
+        when(lobbies.stats(VLAD, ANA)).thenReturn(new LobbyStats(6, 3));
+        when(users.findSimilarUsers(ANA)).thenReturn(List.of(VLAD, 9L, BOGDAN));
+        when(users.findProfiles(any())).thenAnswer(i -> {
+            Collection<Long> ids = i.getArgument(0);
+            return profilesFor(ids.toArray(Long[]::new));
+        });
+
+        List<Long> order = service.suggestions(ANA).stream().map(FriendItem::userId).toList();
+
+        assertEquals(List.of(VLAD, IOANA, 9L), order);
+    }
+
+    @Test
+    void suggestionsAreCappedAtTheMaximum() {
+        Set<Long> many = new HashSet<>();
+        for (long id = 100; id < 100 + FriendService.MAX_SUGGESTIONS + 5; id++) many.add(id);
+        when(friendships.findInvolving(ANA)).thenReturn(List.of());
+        when(lobbies.coPlayerIds(ANA)).thenReturn(many);
+        when(users.findProfiles(any())).thenAnswer(i -> {
+            Collection<Long> ids = i.getArgument(0);
+            return profilesFor(ids.toArray(Long[]::new));
+        });
+
+        assertEquals(FriendService.MAX_SUGGESTIONS, service.suggestions(ANA).size());
+        verify(users, never()).findSimilarUsers(anyLong());
+    }
+
+    @Test
+    void friendListShowsMatchesTogether() {
+        when(friendships.findAccepted(ANA)).thenReturn(List.of(accepted(5L, ANA, BOGDAN)));
+        when(users.findProfiles(any())).thenReturn(profilesFor(BOGDAN));
+        when(lobbies.stats(BOGDAN, ANA)).thenReturn(new LobbyStats(10, 3));
+
+        assertEquals(3, service.listFriends(ANA, null).getFirst().matchesTogether());
     }
 
     private static <T> T eq(T value) {

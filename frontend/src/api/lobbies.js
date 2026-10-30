@@ -15,6 +15,16 @@ export function getMyLobbies(filter) {
     return http(`/lobbies/mine?filter=${filter}`)
 }
 
+// pentru profil: { matchesPlayed, matchesTogether } (matchesTogether gol pe propriul profil)
+export function getUserStats(userId) {
+    return http(`/lobbies/stats/${userId}`)
+}
+
+// pentru profil: ultimele mele meciuri, sau pe profilul altcuiva doar cele jucate împreună
+export function getUserLobbies(userId, limit = 3) {
+    return http(`/lobbies/by-user/${userId}?limit=${limit}`)
+}
+
 export function getTodo() {
     return http('/lobbies/mine/todo')
 }
