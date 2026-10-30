@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import SportIcon from '../../shared/SportIcon'
 import { daysUntil, formatDay, formatTime } from './format'
 
 export default function NextMatchCard({ match }) {
@@ -9,7 +10,9 @@ export default function NextMatchCard({ match }) {
             <div className="mu">Următorul meci</div>
             {match ? (
                 <>
-                    <b className="home-big">{match.sportName} · {match.fieldName}</b>
+                    <b className="home-big home-sport">
+                        <SportIcon type={match.sportCode} /> {match.sportName} · {match.fieldName}
+                    </b>
                     <div className="mu">
                         {formatDay(match.dateTime)} · {formatTime(match.dateTime)} · {daysUntil(match.dateTime)}
                     </div>

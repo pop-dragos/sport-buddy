@@ -37,6 +37,13 @@
     font-size: 16px;
 }
 
+/* iconița colorată a sportului, pe același rând cu numele (ca în prototip) */
+.home-sport {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .home-action {
     margin-top: 8px;
 }
