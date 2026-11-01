@@ -24,6 +24,11 @@ public class FriendController {
         return friendService.listFriends(CurrentUser.id(), query);
     }
 
+    @GetMapping("/of/{userId}")
+    public List<FriendItem> friendsOf(@PathVariable Long userId) {
+        return friendService.friendsOf(CurrentUser.id(), userId);
+    }
+
     @GetMapping("/suggestions")
     public List<FriendItem> suggestions() {
         return friendService.suggestions(CurrentUser.id());

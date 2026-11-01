@@ -5,6 +5,9 @@ const send = (method, path, body) =>
 
 export const getFriends = () => http('/friends')
 
+// prietenii altcuiva; 403 FRIEND_LIST_HIDDEN dacă setările lui nu permit
+export const getFriendsOf = (userId) => http(`/friends/of/${userId}`)
+
 export const getSuggestions = () => http('/friends/suggestions')
 
 export const getRequests = () => http('/friends/requests')

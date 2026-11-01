@@ -126,6 +126,7 @@ Rating, fiabilitate și etichete vin din `GET /ratings/users/{id}` (C). Numărul
 | Metodă și cale | Rol |
 |---|---|
 | `GET /friends?query=` | lista prietenilor, cu căutare |
+| `GET /friends/of/{userId}` | prietenii altui utilizator, pentru profilul lui |
 | `GET /friends/suggestions` | „Posibili cunoscuți", din lobby-urile mele |
 | `GET /friends/requests` | cereri primite și trimise |
 | `POST /friends/requests` | trimite cerere, corp `{ "userId": 12 }` |
@@ -144,6 +145,7 @@ Element din lista de prieteni și din sugestii:
 ```
 `rating` vine din `RatingService` (C), gol pentru utilizatorii noi. `matchesTogether` (meciurile încheiate jucate împreună cu mine) vine din `LobbyService.stats` (B).
 Sugestiile („Posibili cunoscuți"): întâi jucătorii din lobby-urile mele (`LobbyService.coPlayerIds`), cei cu mai multe meciuri împreună primii; apoi, până la 10, jucători activi cu cel puțin un sport comun (cei din orașul meu primii). Fără prieteni și fără cererile în așteptare.
+`GET /friends/of/{userId}` întoarce aceeași formă. Dacă utilizatorul are `showFriendsList = false`, sau `profileVisibility = FRIENDS` și nu îi sunt prieten, răspunde `403 FRIEND_LIST_HIDDEN`. Propria listă se vede mereu.
 `GET /friends/requests` răspunde `{ "incoming": [ { "requestId": 5, "user": {...}, "createdAt": "..." } ], "outgoing": [ ... ] }` (`user` are forma de mai sus).
 `GET /friends/status/{userId}` răspunde `{ "status": "PENDING_SENT", "requestId": 5 }`, valori: `NONE`, `PENDING_SENT`, `PENDING_RECEIVED`, `FRIENDS`. `requestId` apare doar la cele două stări `PENDING_*`, ca profilul să poată anula sau accepta cererea.
 `POST /friends/requests` răspunde `201` cu aceeași formă ca `status`: `PENDING_SENT` (cerere nouă) sau `FRIENDS` (dacă celălalt îmi trimisese deja o cerere, a mea o acceptă). O cerere refuzată mai demult nu blochează una nouă.
@@ -162,14 +164,17 @@ Erori la cerere de prietenie: `400` (cerere către tine), `404` (utilizator inex
 | `POST /feed/{id}/comments` | adaugă comentariu, corp `{ "content": "..." }` |
 
 `POST /feed`, cerere: `{ "content": "Căutăm doi jucători.", "sportId": 1, "tag": "LOOKING_FOR_PLAYERS" }`. Valori `tag`: `TOURNAMENT`, `DISCUSSION`, `LOOKING_FOR_PLAYERS`. Când filtrul de pe pagină este pe un sport, frontend-ul trimite acel `sportId`.
+`GET /feed` întoarce o listă de postări, cele mai noi primele (`size` maxim 50); pagina următoare se cere cât timp vin `size` elemente.
 Postare în răspuns:
 ```json
 {
-  "id": 31, "author": { "id": 7, "username": "ana.popescu", "avatarUrl": null },
+  "id": 31, "author": { "id": 7, "username": "ana.popescu", "fullName": "Ana Popescu", "avatarUrl": null },
+  "authorRating": 4.2,
   "sportId": 1, "tag": "DISCUSSION", "content": "...", "createdAt": "2026-10-19T12:00:00",
   "likeCount": 4, "likedByMe": false, "commentCount": 2
 }
 ```
+`authorRating` vine din `RatingService` (C), gol pentru utilizatorii noi.
 `POST /feed/{id}/like` răspunde `{ "liked": true, "likeCount": 5 }`.
 
 ---

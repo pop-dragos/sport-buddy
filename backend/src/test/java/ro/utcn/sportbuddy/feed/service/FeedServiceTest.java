@@ -18,6 +18,8 @@ import ro.utcn.sportbuddy.feed.model.PostTag;
 import ro.utcn.sportbuddy.feed.repository.CommentRepository;
 import ro.utcn.sportbuddy.feed.repository.PostLikeRepository;
 import ro.utcn.sportbuddy.feed.repository.PostRepository;
+import ro.utcn.sportbuddy.ratings.dto.RatingStatsDto;
+import ro.utcn.sportbuddy.ratings.service.RatingService;
 import ro.utcn.sportbuddy.users.dto.UserRef;
 import ro.utcn.sportbuddy.users.service.UserService;
 
@@ -41,6 +43,7 @@ class FeedServiceTest {
     private PostLikeRepository likes;
     private UserService users;
     private CatalogService catalog;
+    private RatingService ratings;
     private FeedService service;
 
     @BeforeEach
@@ -50,7 +53,9 @@ class FeedServiceTest {
         likes = mock(PostLikeRepository.class);
         users = mock(UserService.class);
         catalog = mock(CatalogService.class);
-        service = new FeedService(posts, comments, likes, users, catalog);
+        ratings = mock(RatingService.class);
+        when(ratings.getStats(any())).thenAnswer(i -> RatingStatsDto.newUser(i.getArgument(0)));
+        service = new FeedService(posts, comments, likes, users, catalog, ratings);
 
         when(users.findRefs(any())).thenReturn(Map.of(
                 ANA, new UserRef(ANA, "ana", "Ana Popescu", null),
@@ -220,5 +225,22 @@ class FeedServiceTest {
         PostDto p = service.getFeed(ANA, null, 0, 20).getFirst();
 
         assertEquals("Utilizator necunoscut", p.author().fullName());
+    }
+
+    @Test
+    void feedShowsAuthorRatingAndAsksOncePerAuthor() {
+        when(posts.findAllByOrderByCreatedAtDescIdDesc(any()))
+                .thenReturn(List.of(post(1L, BOGDAN), post(2L, BOGDAN), post(3L, ANA)));
+        when(likes.countByPostIds(any())).thenReturn(List.of());
+        when(comments.countByPostIds(any())).thenReturn(List.of());
+        when(likes.findLikedPostIds(any(), any())).thenReturn(List.of());
+        when(ratings.getStats(BOGDAN)).thenReturn(new RatingStatsDto(BOGDAN, 4.2, 9, 90, List.of()));
+
+        List<PostDto> feed = service.getFeed(ANA, null, 0, 20);
+
+        assertEquals(4.2, feed.get(0).authorRating());
+        assertEquals(4.2, feed.get(1).authorRating());
+        assertNull(feed.get(2).authorRating());
+        verify(ratings, times(1)).getStats(BOGDAN);
     }
 }

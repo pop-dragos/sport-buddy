@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getFeed } from '../../api/feed'
 import { errorMessage } from '../../api/http'
+import SportIcon from '../../shared/SportIcon'
 import { useCatalog } from '../profile/useCatalog'
 import PostCard from './PostCard'
 import PostComposer from './PostComposer'
@@ -82,9 +83,10 @@ export default function Feed() {
           <button
             key={s.id}
             type="button"
-            className={`chip ${sportId === s.id ? 'on' : ''}`}
+            className={`chip feed-chip ${sportId === s.id ? 'on' : ''}`}
             onClick={() => setSportId(s.id)}
           >
+            <SportIcon type={s.code} />
             {s.name}
           </button>
         ))}

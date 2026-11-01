@@ -20,6 +20,9 @@ import ro.utcn.sportbuddy.ratings.dto.RatingStatsDto;
 import ro.utcn.sportbuddy.ratings.service.RatingService;
 import ro.utcn.sportbuddy.users.dto.PublicProfile;
 import ro.utcn.sportbuddy.users.dto.SportLevelDto;
+import ro.utcn.sportbuddy.users.dto.UserSettingsDto;
+import ro.utcn.sportbuddy.users.model.ProfileVisibility;
+import ro.utcn.sportbuddy.users.model.Theme;
 import ro.utcn.sportbuddy.users.model.SportLevel;
 import ro.utcn.sportbuddy.users.model.WhoCanAddMe;
 import ro.utcn.sportbuddy.users.service.UserService;
@@ -358,6 +361,54 @@ class FriendServiceTest {
         when(lobbies.stats(BOGDAN, ANA)).thenReturn(new LobbyStats(10, 3));
 
         assertEquals(3, service.listFriends(ANA, null).getFirst().matchesTogether());
+    }
+
+    // ---------- prietenii altcuiva ----------
+
+    private void bogdanSettings(boolean showFriendsList, ProfileVisibility visibility) {
+        when(users.getSettings(BOGDAN)).thenReturn(new UserSettingsDto(Theme.SYSTEM, true, true, true, true, false,
+                visibility, WhoCanAddMe.EVERYONE, showFriendsList));
+        when(friendships.findAccepted(BOGDAN)).thenReturn(List.of(accepted(8L, BOGDAN, IOANA)));
+        when(users.findProfiles(any())).thenReturn(profilesFor(IOANA));
+    }
+
+    @Test
+    void friendsOfSomeoneAreVisibleWhenAllowed() {
+        bogdanSettings(true, ProfileVisibility.EVERYONE);
+
+        List<FriendItem> list = service.friendsOf(ANA, BOGDAN);
+
+        assertEquals(List.of(IOANA), list.stream().map(FriendItem::userId).toList());
+    }
+
+    @Test
+    void friendsListHiddenBySetting() {
+        bogdanSettings(false, ProfileVisibility.EVERYONE);
+        ApiException e = error(() -> service.friendsOf(ANA, BOGDAN));
+        assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
+        assertEquals("FRIEND_LIST_HIDDEN", e.getCode());
+    }
+
+    @Test
+    void friendsOnlyProfileHidesListFromStrangersButNotFriends() {
+        bogdanSettings(true, ProfileVisibility.FRIENDS);
+        assertEquals("FRIEND_LIST_HIDDEN", error(() -> service.friendsOf(ANA, BOGDAN)).getCode());
+
+        when(friendships.findBetween(ANA, BOGDAN)).thenReturn(List.of(accepted(5L, ANA, BOGDAN)));
+        assertEquals(1, service.friendsOf(ANA, BOGDAN).size());
+    }
+
+    @Test
+    void ownFriendListIsAlwaysVisible() {
+        bogdanSettings(false, ProfileVisibility.FRIENDS);
+        assertEquals(1, service.friendsOf(BOGDAN, BOGDAN).size());
+        verify(users, never()).getSettings(BOGDAN);
+    }
+
+    @Test
+    void friendsOfDeletedUserIsNotFound() {
+        when(users.isActive(BOGDAN)).thenReturn(false);
+        assertEquals(HttpStatus.NOT_FOUND, error(() -> service.friendsOf(ANA, BOGDAN)).getStatus());
     }
 
     private static <T> T eq(T value) {

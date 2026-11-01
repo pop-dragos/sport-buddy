@@ -18,6 +18,8 @@ import ro.utcn.sportbuddy.lobbies.service.LobbyService;
 import ro.utcn.sportbuddy.ratings.service.RatingService;
 import ro.utcn.sportbuddy.users.dto.PublicProfile;
 import ro.utcn.sportbuddy.users.dto.SportLevelDto;
+import ro.utcn.sportbuddy.users.dto.UserSettingsDto;
+import ro.utcn.sportbuddy.users.model.ProfileVisibility;
 import ro.utcn.sportbuddy.users.model.WhoCanAddMe;
 import ro.utcn.sportbuddy.users.service.FriendshipChecker;
 import ro.utcn.sportbuddy.users.service.UserService;
@@ -173,6 +175,28 @@ public class FriendService implements FriendshipChecker {
         String q = normalize(query);
         return toItems(me, friendIds(me)).stream()
                 .filter(f -> q.isEmpty() || normalize(f.username()).contains(q) || normalize(f.fullName()).contains(q))
+                .sorted(Comparator.comparing(f -> normalize(f.fullName())))
+                .toList();
+    }
+
+    // Prietenii altcuiva, pentru profilul lui. Respectă setările lui: „Lista de prieteni vizibilă” și,
+    // la un profil vizibil doar prietenilor, faptul că îi sunt prieten. Nu e readOnly: getSettings poate
+    // crea setările implicite ale unui utilizator vechi.
+    @Transactional
+    public List<FriendItem> friendsOf(Long viewer, Long target) {
+        if (!userService.isActive(target)) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Utilizatorul nu există.");
+        }
+        if (!viewer.equals(target)) {
+            UserSettingsDto settings = userService.getSettings(target);
+            boolean visible = settings.showFriendsList()
+                    && (settings.profileVisibility() == ProfileVisibility.EVERYONE || areFriends(viewer, target));
+            if (!visible) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "FRIEND_LIST_HIDDEN",
+                        "Lista de prieteni a acestui utilizator nu este vizibilă.");
+            }
+        }
+        return toItems(viewer, friendIds(target)).stream()
                 .sorted(Comparator.comparing(f -> normalize(f.fullName())))
                 .toList();
     }
