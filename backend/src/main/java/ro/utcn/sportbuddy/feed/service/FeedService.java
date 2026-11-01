@@ -16,6 +16,7 @@ import ro.utcn.sportbuddy.feed.model.PostTag;
 import ro.utcn.sportbuddy.feed.repository.CommentRepository;
 import ro.utcn.sportbuddy.feed.repository.PostLikeRepository;
 import ro.utcn.sportbuddy.feed.repository.PostRepository;
+import ro.utcn.sportbuddy.ratings.service.RatingService;
 import ro.utcn.sportbuddy.users.dto.UserRef;
 import ro.utcn.sportbuddy.users.service.UserService;
 
@@ -35,15 +36,17 @@ public class FeedService {
     private final PostLikeRepository likeRepository;
     private final UserService userService;
     private final CatalogService catalogService;
+    private final RatingService ratingService;
 
     public FeedService(PostRepository postRepository, CommentRepository commentRepository,
                        PostLikeRepository likeRepository, UserService userService,
-                       CatalogService catalogService) {
+                       CatalogService catalogService, RatingService ratingService) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.likeRepository = likeRepository;
         this.userService = userService;
         this.catalogService = catalogService;
+        this.ratingService = ratingService;
     }
 
     // Cele mai noi primele. Fără sportId: toate sporturile.
@@ -120,8 +123,11 @@ public class FeedService {
         Map<Long, Long> likes = toCounts(likeRepository.countByPostIds(ids));
         Map<Long, Long> comments = toCounts(commentRepository.countByPostIds(ids));
         Set<Long> likedByMe = new HashSet<>(likeRepository.findLikedPostIds(viewerId, ids));
+        // o singură cerere de rating pentru fiecare autor, chiar dacă are mai multe postări pe pagină
+        Map<Long, Double> ratings = new HashMap<>();
+        for (Long authorId : authors.keySet()) ratings.put(authorId, ratingService.getStats(authorId).average());
 
-        return posts.stream().map(p -> new PostDto(p.getId(), author(authors, p.getAuthorId()), p.getSportId(),
+        return posts.stream().map(p -> new PostDto(p.getId(), author(authors, p.getAuthorId()), ratings.get(p.getAuthorId()), p.getSportId(),
                 p.getTag(), p.getText(), local(p.getCreatedAt()), likes.getOrDefault(p.getId(), 0L),
                 likedByMe.contains(p.getId()), comments.getOrDefault(p.getId(), 0L))).toList();
     }

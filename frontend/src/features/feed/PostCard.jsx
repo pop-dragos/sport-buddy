@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { addComment, getComments, toggleLike } from '../../api/feed'
 import { errorMessage } from '../../api/http'
 import Avatar from '../../shared/Avatar'
+import { formatRating } from '../home/format'
 import { tagLabel } from './tags'
 
 function commentsLabel(n) {
@@ -63,10 +64,15 @@ export default function PostCard({ post, sportName }) {
   return (
     <div className="card">
       <div className="top">
-        <Link to={`/profile/${author.id}`} className="r feed-author">
-          <Avatar name={author.fullName} url={author.avatarUrl} />
-          {author.username}
-        </Link>
+        <span className="r">
+          <Link to={`/profile/${author.id}`} className="r feed-author">
+            <Avatar name={author.fullName} url={author.avatarUrl} />
+            {author.username}
+          </Link>
+          <span className={post.authorRating == null ? 'mu' : 'feed-rating'}>
+            {post.authorRating == null ? formatRating(null) : `★ ${formatRating(post.authorRating)}`}
+          </span>
+        </span>
         <span className={`tag feed-${post.tag}`}>{sportName} · {tagLabel(post.tag)}</span>
       </div>
 

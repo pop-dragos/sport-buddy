@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
-import { getFriends } from '../../api/friends'
+import { getFriends, getFriendsOf } from '../../api/friends'
 import { getUserLobbies, getUserStats } from '../../api/lobbies'
 import { getUserRating } from '../../api/ratings'
 import { getProfile } from '../../api/users'
 import Avatar from '../../shared/Avatar'
 import { useAuth } from '../auth/useAuth'
 import FriendButton from '../friends/FriendButton'
+import FriendRow from '../friends/FriendRow'
 import { formatDay, formatTime } from '../home/format'
 import { levelLabel } from './levels'
 import RatingLine from './RatingLine'
@@ -27,6 +28,8 @@ function ProfileView({ id }) {
   const [other, setOther] = useState(null)
   const [rating, setRating] = useState(null)
   const [friendCount, setFriendCount] = useState(null)
+  // prietenii altcuiva; rămâne null dacă setările lui nu permit (secțiunea nu apare)
+  const [theirFriends, setTheirFriends] = useState(null)
   // { matchesPlayed, matchesTogether } și lista de jos: pe profilul meu meciurile mele, pe al altcuiva cele împreună
   const [stats, setStats] = useState(null)
   const [matches, setMatches] = useState(null)
@@ -41,6 +44,7 @@ function ProfileView({ id }) {
     if (isMe) {
       getFriends().then((f) => { if (!cancelled) setFriendCount(f.length) }).catch(ignore)
     } else {
+      getFriendsOf(id).then((f) => { if (!cancelled) setTheirFriends(f) }).catch(ignore)
       getProfile(id)
         .then((p) => { if (!cancelled) setOther(p) })
         .catch((e) => { if (!cancelled) setError(errorMessage(e)) })
@@ -75,6 +79,7 @@ function ProfileView({ id }) {
   const cityName = cities.find((c) => c.id === profile.cityId)?.name
   const sportName = (sportId) => sports.find((s) => s.id === sportId)?.name ?? `Sport ${sportId}`
   const tags = rating?.tags ?? []
+  const sportNames = Object.fromEntries(sports.map((s) => [s.code, s.name]))
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
@@ -139,6 +144,14 @@ function ProfileView({ id }) {
           </div>
         )}
       </div>
+
+      {theirFriends && (
+        <div className="card">
+          <b>Prieteni ({theirFriends.length})</b>
+          {theirFriends.length === 0 && <div className="mu" style={{ marginTop: 6 }}>Nu are încă prieteni.</div>}
+          {theirFriends.map((f) => <FriendRow key={f.userId} friend={f} sportNames={sportNames} />)}
+        </div>
+      )}
 
       <b style={{ display: 'block', margin: '4px 0 8px' }}>{isMe ? 'Meciurile mele' : 'Meciuri împreună'}</b>
       {(matches ?? []).map((l) => (

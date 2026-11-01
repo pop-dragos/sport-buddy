@@ -5,5 +5,6 @@ import ro.utcn.sportbuddy.users.dto.UserRef;
 
 import java.time.LocalDateTime;
 
-public record PostDto(Long id, UserRef author, Long sportId, PostTag tag, String content,
+// authorRating: media autorului (din ratings), gol pentru utilizatorii noi.
+public record PostDto(Long id, UserRef author, Double authorRating, Long sportId, PostTag tag, String content,
                       LocalDateTime createdAt, long likeCount, boolean likedByMe, long commentCount) {}
