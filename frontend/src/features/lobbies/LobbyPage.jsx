@@ -87,135 +87,142 @@ export default function LobbyPage() {
     <div className="lobby-page">
       {back}
 
-      <div className="card">
-        <div className="top">
-          <h3 className="lobby-title">{lobby.sport.name}</h3>
-          <span className="tag">{STATUS[lobby.status]}</span>
-        </div>
-        <div className="mu">{lobby.field.name}, {lobby.city.name}</div>
-
-        <div className="lobby-facts">
-          <Fact label="Data" value={formatDay(lobby.dateTime)} />
-          <Fact label="Ora" value={formatTime(lobby.dateTime)} />
-          <Fact label="Organizator" value={lobby.host.username} />
-          <Fact label="Locuri" value={`${lobby.currentPlayers} din ${lobby.maxPlayers}`} />
-        </div>
-
-        <div className="bar">
-          <i style={{ width: `${(lobby.currentPlayers / lobby.maxPlayers) * 100}%` }} />
-        </div>
-
-        <div className="top">
-          <span className="mu">
-            {lobby.freeSlots === 0 ? 'Lobby complet' : `${lobby.freeSlots} locuri libere`}, nivel mediu {formatRating(lobby.averageRating)}
-          </span>
-          <LobbyAction
-            lobby={lobby}
-            busy={busy}
-            onJoin={() => run(() => requestToJoin(lobby.id))}
-            onLeave={leave}
-            onCancel={cancel}
-          />
-        </div>
-        {actionError && <div className="err lobby-note">{actionError}</div>}
-      </div>
-
-      {lobby.isHost && lobby.pendingRequests.length > 0 && (
-        <div className="card">
-          <b>Cereri de alăturare</b>
-          <div className="lobby-list">
-            {lobby.pendingRequests.map((r) => (
-              <div key={r.requestId} className="pl">
-                <span className="lobby-player">
-                  <Avatar name={r.username} size={28} />
-                  <span>
-                    <Link className="lk" to={`/profile/${r.userId}`}>{r.username}</Link>
-                    <div className="mu lobby-small">
-                      rating {formatRating(r.rating)}
-                      {r.reliabilityPercent != null && `, ${r.reliabilityPercent}% prezență`}
-                    </div>
-                  </span>
-                </span>
-                <span className="r">
-                  <button className="b" disabled={busy} onClick={() => run(() => acceptRequest(lobby.id, r.requestId))}>
-                    Acceptă
-                  </button>
-                  <button className="b o" disabled={busy} onClick={() => run(() => rejectRequest(lobby.id, r.requestId))}>
-                    Refuză
-                  </button>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {lobby.isHost && lobby.status === 'FINISHED' && !lobby.attendanceSaved && (
-        <AttendanceCard
-          lobby={lobby}
-          busy={busy}
-          onSave={(attendance) => run(() => saveAttendance(lobby.id, attendance))}
-        />
-      )}
-
-      <CostCard
-        lobby={lobby}
-        me={lobby.participants.find((p) => p.userId === user.id)}
-        busy={busy}
-        onLock={() => run(() => lockLobby(lobby.id))}
-        onPay={() => setPaying(true)}
-      />
-
-      {paying && (
-        <PaymentModal
-          lobby={lobby}
-          onClose={() => setPaying(false)}
-          onPaid={() => {
-            setPaying(false)
-            run(() => getLobby(lobby.id))
-          }}
-        />
-      )}
-
-      {/* import.meta.env.DEV e true doar cu `npm run dev`, deci panoul nu ajunge într-un build real */}
-      {import.meta.env.DEV && lobby.isHost && (lobby.status === 'OPEN' || lobby.status === 'LOCKED') && (
-        <SimulationCard lobby={lobby} busy={busy} run={run} />
-      )}
-
-      <div className="card">
-        <b>Participanți</b>
-        <div className="lobby-list">
-          {lobby.participants.map((p) => (
-            <div key={p.userId} className="pl">
-              <span className="lobby-player">
-                <Avatar name={p.username} size={28} />
-                <span>
-                  <Link className="lk" to={`/profile/${p.userId}`}>{p.username}</Link>
-                  {p.userId === user.id && <span className="mu"> (tu)</span>}
-                  {p.isHost && <div className="mu lobby-small">organizator</div>}
-                  {p.attended === false && <div className="mu lobby-small">absent</div>}
-                </span>
-              </span>
-              <span className="lobby-rating">
-                {formatRating(p.rating)}
-                {p.reliabilityPercent != null && <span className="mu lobby-small">{p.reliabilityPercent}% prezență</span>}
-              </span>
+      {/* pe ecran lat: detaliile și acțiunile în stânga, oamenii și chat-ul în dreapta; sub 900px, o coloană */}
+      <div className="lobby-grid">
+        <div>
+          <div className="card">
+            <div className="top">
+              <h3 className="lobby-title">{lobby.sport.name}</h3>
+              <span className="tag">{STATUS[lobby.status]}</span>
             </div>
-          ))}
-          {lobby.broughtPlayers > 0 && (
-            <div className="pl mu">
-              +{lobby.broughtPlayers} {lobby.broughtPlayers === 1 ? 'jucător adus' : 'jucători aduși'} de organizator
+            <div className="mu">{lobby.field.name}, {lobby.city.name}</div>
+
+            <div className="lobby-facts">
+              <Fact label="Data" value={formatDay(lobby.dateTime)} />
+              <Fact label="Ora" value={formatTime(lobby.dateTime)} />
+              <Fact label="Organizator" value={lobby.host.username} />
+              <Fact label="Locuri" value={`${lobby.currentPlayers} din ${lobby.maxPlayers}`} />
+            </div>
+
+            <div className="bar">
+              <i style={{ width: `${(lobby.currentPlayers / lobby.maxPlayers) * 100}%` }} />
+            </div>
+
+            <div className="top">
+              <span className="mu">
+                {lobby.freeSlots === 0 ? 'Lobby complet' : `${lobby.freeSlots} locuri libere`}, nivel mediu {formatRating(lobby.averageRating)}
+              </span>
+              <LobbyAction
+                lobby={lobby}
+                busy={busy}
+                onJoin={() => run(() => requestToJoin(lobby.id))}
+                onLeave={leave}
+                onCancel={cancel}
+              />
+            </div>
+            {actionError && <div className="err lobby-note">{actionError}</div>}
+          </div>
+
+          {lobby.isHost && lobby.pendingRequests.length > 0 && (
+            <div className="card">
+              <b>Cereri de alăturare</b>
+              <div className="lobby-list">
+                {lobby.pendingRequests.map((r) => (
+                  <div key={r.requestId} className="pl">
+                    <span className="lobby-player">
+                      <Avatar name={r.username} size={28} />
+                      <span>
+                        <Link className="lk" to={`/profile/${r.userId}`}>{r.username}</Link>
+                        <div className="mu lobby-small">
+                          rating {formatRating(r.rating)}
+                          {r.reliabilityPercent != null && `, ${r.reliabilityPercent}% prezență`}
+                        </div>
+                      </span>
+                    </span>
+                    <span className="r">
+                      <button className="b" disabled={busy} onClick={() => run(() => acceptRequest(lobby.id, r.requestId))}>
+                        Acceptă
+                      </button>
+                      <button className="b o" disabled={busy} onClick={() => run(() => rejectRequest(lobby.id, r.requestId))}>
+                        Refuză
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
+
+          {lobby.isHost && lobby.status === 'FINISHED' && !lobby.attendanceSaved && (
+            <AttendanceCard
+              lobby={lobby}
+              busy={busy}
+              onSave={(attendance) => run(() => saveAttendance(lobby.id, attendance))}
+            />
+          )}
+
+          <CostCard
+            lobby={lobby}
+            me={lobby.participants.find((p) => p.userId === user.id)}
+            busy={busy}
+            onLock={() => run(() => lockLobby(lobby.id))}
+            onPay={() => setPaying(true)}
+          />
+
+          {paying && (
+            <PaymentModal
+              lobby={lobby}
+              onClose={() => setPaying(false)}
+              onPaid={() => {
+                setPaying(false)
+                run(() => getLobby(lobby.id))
+              }}
+            />
+          )}
+
+          {/* import.meta.env.DEV e true doar cu `npm run dev`, deci panoul nu ajunge într-un build real */}
+          {import.meta.env.DEV && lobby.isHost && (lobby.status === 'OPEN' || lobby.status === 'LOCKED') && (
+            <SimulationCard lobby={lobby} busy={busy} run={run} />
+          )}
+        </div>
+
+        <div>
+          <div className="card">
+            <b>Participanți</b>
+            <div className="lobby-list">
+              {lobby.participants.map((p) => (
+                <div key={p.userId} className="pl">
+                  <span className="lobby-player">
+                    <Avatar name={p.username} size={28} />
+                    <span>
+                      <Link className="lk" to={`/profile/${p.userId}`}>{p.username}</Link>
+                      {p.userId === user.id && <span className="mu"> (tu)</span>}
+                      {p.isHost && <div className="mu lobby-small">organizator</div>}
+                      {p.attended === false && <div className="mu lobby-small">absent</div>}
+                    </span>
+                  </span>
+                  <span className="lobby-rating">
+                    {formatRating(p.rating)}
+                    {p.reliabilityPercent != null && <span className="mu lobby-small">{p.reliabilityPercent}% prezență</span>}
+                  </span>
+                </div>
+              ))}
+              {lobby.broughtPlayers > 0 && (
+                <div className="pl mu">
+                  +{lobby.broughtPlayers} {lobby.broughtPlayers === 1 ? 'jucător adus' : 'jucători aduși'} de organizator
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* după meci, cei care au venit își notează colegii; apoi ratingurile de mai sus se reîncarcă */}
+          {lobby.status === 'FINISHED' && lobby.participants.some((p) => p.userId === user.id && p.attended !== false) && (
+            <ReviewCard key={lobby.id} lobbyId={lobby.id} onSubmitted={() => getLobby(lobby.id).then(setLobby).catch(() => {})} />
+          )}
+
+          <LobbyChat key={lobby.id} lobbyId={lobby.id} canChat={lobby.isHost || lobby.myState === 'ACCEPTED'} />
         </div>
       </div>
-
-      {/* după meci, cei care au venit își notează colegii; apoi ratingurile de mai sus se reîncarcă */}
-      {lobby.status === 'FINISHED' && lobby.participants.some((p) => p.userId === user.id && p.attended !== false) && (
-        <ReviewCard key={lobby.id} lobbyId={lobby.id} onSubmitted={() => getLobby(lobby.id).then(setLobby).catch(() => {})} />
-      )}
-
-      <LobbyChat key={lobby.id} lobbyId={lobby.id} canChat={lobby.isHost || lobby.myState === 'ACCEPTED'} />
     </div>
   )
 }
