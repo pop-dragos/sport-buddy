@@ -63,18 +63,21 @@ Prototipul `docs/prototip/sportbuddy.html` este **referința vizuală și de com
 
 ```css
 :root {
-  --bg: #fff; --sf: #f5f5f5; --tx: #111; --mu: #6b6b6b; --bd: #e4e4e4;
+  --bg: #f6f6f4; --sf: #ececea; --tx: #111; --mu: #6b6b6b; --bd: #dfdfdb;   /* alb puțin mai blând decât #fff */
   --ac: #111; --at: #fff;           /* butoane principale: negru pe alb */
+  --card: rgba(252, 252, 250, 0.72); --card-bd: rgba(17, 17, 17, 0.08);       /* carduri translucide */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0d0d0d; --sf: #181818; --tx: #f2f2f2; --mu: #9a9a9a; --bd: #2a2a2a;
     --ac: #f2f2f2; --at: #111;
+    --card: rgba(24, 24, 24, 0.62); --card-bd: rgba(255, 255, 255, 0.08);
   }
 }
 :root[data-theme="dark"] {
   --bg: #0d0d0d; --sf: #181818; --tx: #f2f2f2; --mu: #9a9a9a; --bd: #2a2a2a;
   --ac: #f2f2f2; --at: #111;
+  --card: rgba(24, 24, 24, 0.62); --card-bd: rgba(255, 255, 255, 0.08);
 }
 ```
 
@@ -95,12 +98,12 @@ Prototipul `docs/prototip/sportbuddy.html` este **referința vizuală și de com
 
 **Vreme** (iconițe SVG colorate): soare galben `#f59e0b`, nor gri `#94a3b8`, ploaie = nor gri cu picături albastre `#3b82f6`; soare cu nor pentru zilele cu risc mediu.
 
-**Forme**: carduri cu chenar de 1 px `--bd`, colțuri rotunjite 12 px, padding 14 px. Butoane și câmpuri 8 px. Chip-urile și etichetele complet rotunjite. Ferestre modale 14 px, cu fundal întunecat semitransparent. Cardul de conectare 16 px, cu umbră ușoară. Notificările scurte (toast) apar jos, centrat.
+**Forme**: carduri translucide (fundal `--card`, blur 8 px) cu chenar de 1 px `--card-bd`, colțuri rotunjite 12 px, padding 14 px. Butoane și câmpuri 8 px. Chip-urile și etichetele complet rotunjite. Ferestre modale 14 px, cu fundal întunecat semitransparent. Cardul de conectare 16 px, cu umbră ușoară. Notificările scurte (toast) apar jos, centrat.
 
 **Layout general**
 - **Bară laterală** (190 px, 64 px pe ecrane înguste, fundal `--sf`): sigla „SportBuddy" cu „S" albastru, apoi Acasă, Agenda mea (cu un număr pentru ce ai de făcut), Prieteni, eticheta SPORTURI și cele 12 sporturi cu iconițe colorate. Jos, în colț: avatarul și **username-ul** (nu emailul, tăiat cu „…" dacă e lung). Click deschide un meniu cu „Profilul meu", „Setări", „Ieși din cont".
 - **Header**: titlul paginii în stânga; în dreapta câmpul de căutare a orașului (cu sugestii) și butonul rotund albastru „+" pentru crearea unui lobby.
-- **Pagina de start**: două coloane. Stânga: salut, cardul de completare a profilului (dacă e cazul), „Următorul meci" și „De făcut", vremea, recomandările, topul jucătorilor. Dreapta: comunitatea (feed). Celelalte pagini sunt centrate, cu lățime maximă ~960 px.
+- **Pagina de start**: două coloane. Stânga: salut, cardul de completare a profilului (dacă e cazul), „Următorul meci" și „De făcut", vremea, recomandările, topul jucătorilor. Dreapta: comunitatea (feed). Celelalte pagini sunt centrate, cu lățime maximă ~960 px (containerul `.page` din `Layout.jsx`); pagina unui lobby are ~1100 px și două coloane pe ecran lat (detalii și acțiuni în stânga, participanți și chat în dreapta).
 
 **Ecranele** (fiecare există în prototip)
 1. **Conectare / Cont nou**: card centrat. Titlu, câmp „Utilizator sau email", „Parolă" cu pictograma ochi, link „Ai uitat parola?", bifa „Ține-mă minte", buton principal, rândul „Nu ai cont încă? Creează cont", separatorul „sau conectează-te cu" și butoane Google și iCloud cu logo-uri.
