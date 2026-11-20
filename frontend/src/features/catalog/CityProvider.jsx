@@ -17,8 +17,12 @@ export default function CityProvider({ children }) {
     setChoice({ userId: user?.id, cityId })
   }
 
+  // Orașele trebuie doar în aplicație (header, prima pagină), deci le cerem după conectare;
+  // pe login și pe pagina de prezentare nu facem nicio cerere.
   // Dacă backend-ul nu răspunde încă (de exemplu abia pornește), mai încercăm la 3 secunde.
+  const signedIn = user != null
   useEffect(() => {
+    if (!signedIn) return
     let cancelled = false
     let timer
     function load() {
@@ -31,7 +35,7 @@ export default function CityProvider({ children }) {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [])
+  }, [signedIn])
 
   // Orașul ales în header; până alege ceva: orașul din profil, apoi Baia Mare
   const city = cities.find((c) => c.id === selectedId)
