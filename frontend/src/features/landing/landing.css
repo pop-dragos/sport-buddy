@@ -1,0 +1,852 @@
+/* Pagina de prezentare (/bun-venit), în stilul paginilor de produs Apple.
+   Culorile vin din variabilele din shared/styles.css, deci tema luminoasă și cea întunecată merg amândouă. */
+
+.landing {
+  /* înălțimea barei de sus; povestea se lipește imediat sub ea (la fel ca NAV_HEIGHT din ScrollStory.jsx) */
+  --landing-bar: 52px;
+  --link: #2563eb;
+  --pill: #2563eb;
+  --pill-hover: #1d4ed8;
+  min-height: 100%;
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .landing {
+    --link: #4b8bf5;
+  }
+}
+
+:root[data-theme="dark"] .landing {
+  --link: #4b8bf5;
+}
+
+.landing a:focus-visible,
+.landing button:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ---------- butoane și linkuri ---------- */
+
+/* butoanele-pastilă, ca la Apple */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border: 0;
+  border-radius: 980px;
+  background: var(--pill);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.pill:hover {
+  background: var(--pill-hover);
+}
+
+.pill.small {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.text-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-size: 17px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- bara de sus (mată, ca bara de produs Apple) ---------- */
+
+.landing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--landing-bar);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 max(20px, calc((100% - 1080px) / 2));
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid color-mix(in srgb, var(--bd) 70%, transparent);
+}
+
+.landing-logo {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--tx);
+  text-decoration: none;
+}
+
+.landing-logo b {
+  color: #2563eb;
+}
+
+.landing-nav-links {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+}
+
+.landing-nav-links a,
+.landing-nav-links button,
+.landing-nav-login {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tx);
+  opacity: 0.8;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.landing-nav-links a:hover,
+.landing-nav-links button:hover,
+.landing-nav-login:hover {
+  opacity: 1;
+}
+
+.landing-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .landing-nav-links {
+    display: none;
+  }
+
+  .landing-nav-actions {
+    margin-left: auto;
+  }
+}
+
+/* ---------- deschiderea ---------- */
+
+.hero {
+  text-align: center;
+}
+
+.hero-eyebrow {
+  margin: 0 0 8px;
+  font-size: clamp(17px, 2vw, 21px);
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.hero-title {
+  margin: 0;
+  font-size: clamp(44px, min(7vw, 9vh), 96px);
+  font-weight: 800;
+  /* destul cât diacriticele („Î", virgula lui „ș") să nu se atingă între rânduri */
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.hero-title-soft {
+  color: var(--mu);
+}
+
+.hero-sub {
+  margin: 18px auto 0;
+  max-width: 620px;
+  font-size: clamp(17px, 1.7vw, 21px);
+  line-height: 1.4;
+  color: var(--mu);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px 28px;
+  margin-top: 28px;
+}
+
+/* ---------- povestea legată de scroll ---------- */
+
+.story {
+  position: relative;
+  height: 400vh;
+}
+
+.story-sticky {
+  position: sticky;
+  top: var(--landing-bar);
+  height: calc(100vh - var(--landing-bar));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 16px 16px;
+  overflow: hidden;
+}
+
+/* titlul mare de la început stă peste titlurile etapelor și dispare la primul scroll */
+.story-hero {
+  position: absolute;
+  top: 24px;
+  left: 16px;
+  right: 16px;
+  z-index: 2;
+}
+
+/* aceeași înălțime ca titlesHeight() din ScrollStory.jsx (de acolo se calculează mărimea laptopului) */
+.story-titles {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  height: clamp(110px, 18vh, 170px);
+  flex-shrink: 0;
+}
+
+.story-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: center;
+}
+
+/* titluri mari și strânse; se micșorează și după înălțimea ecranului, ca laptopul să încapă și la 1280×720 */
+.story-title {
+  margin: 0;
+  font-size: clamp(30px, min(4.6vw, 6vh), 60px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+/* text gri, cu cuvintele-cheie în culoarea textului */
+.story-text {
+  margin: 14px auto 0;
+  max-width: 760px;
+  font-size: clamp(16px, 2.3vh, 21px);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--mu);
+}
+
+.story-text .em {
+  color: var(--tx);
+}
+
+/* laptopul trece peste textul de deschidere când urcă */
+.story-device {
+  position: relative;
+  z-index: 3;
+  flex-shrink: 0;
+  transform-origin: 50% 0;
+}
+
+.story-frame {
+  flex-shrink: 0;
+}
+
+.story-scaler {
+  transform-origin: 0 0;
+}
+
+.story-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.story-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tx);
+}
+
+/* ---------- laptopul ---------- */
+
+.laptop {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.laptop-screen {
+  position: relative;
+  flex: 1;
+  width: 89.3%; /* 1228 din 1375: baza e mai lată decât ecranul */
+  min-height: 0;
+  padding: 14px;
+  background: #0b0b0d;
+  border-radius: 22px 22px 6px 6px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 40px 80px -20px rgba(0, 0, 0, 0.35);
+}
+
+.laptop-camera {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border-radius: 50%;
+  background: #2a2a2e;
+}
+
+.laptop-base {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  height: 18px;
+  border-radius: 2px 2px 16px 16px;
+  background: linear-gradient(180deg, #e3e3e6, #c4c4c9 70%, #a9a9ae);
+}
+
+/* adâncitura pentru deschiderea capacului */
+.laptop-base i {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 16%;
+  height: 7px;
+  transform: translateX(-50%);
+  border-radius: 0 0 10px 10px;
+  background: #b4b4b9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .laptop-base {
+    background: linear-gradient(180deg, #4a4a4f, #2f2f33 70%, #1f1f22);
+  }
+
+  :root:not([data-theme="light"]) .laptop-base i {
+    background: #28282c;
+  }
+}
+
+:root[data-theme="dark"] .laptop-base {
+  background: linear-gradient(180deg, #4a4a4f, #2f2f33 70%, #1f1f22);
+}
+
+/* pe fundalul aproape negru, marginea ecranului are nevoie de un contur ca să se vadă */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .laptop-screen {
+    box-shadow: 0 0 0 1px #34343a, 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+  }
+}
+
+:root[data-theme="dark"] .laptop-screen {
+  box-shadow: 0 0 0 1px #34343a, 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+}
+
+:root[data-theme="dark"] .laptop-base i {
+  background: #28282c;
+}
+
+/* fereastra aplicației, pe ecranul laptopului */
+.laptop .demo-window {
+  border: 0;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+/* varianta statică: laptopul are lățimea paginii și înălțimea conținutului */
+.laptop.fluid {
+  height: auto;
+}
+
+.laptop.fluid .laptop-screen {
+  width: 92%;
+  flex: none;
+}
+
+@media (max-width: 640px) {
+  .laptop.fluid .laptop-screen {
+    padding: 6px;
+    border-radius: 12px 12px 4px 4px;
+  }
+
+  .laptop.fluid .laptop-base {
+    height: 9px;
+  }
+
+  .laptop-camera {
+    display: none;
+  }
+}
+
+/* ---------- fereastra aplicației ---------- */
+
+.demo-window {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--bd);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  /* e o imagine a aplicației, nu aplicația: nimic de apăsat sau de selectat */
+  pointer-events: none;
+  user-select: none;
+}
+
+.demo-titlebar {
+  position: relative;
+  flex-shrink: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: var(--sf);
+  border-bottom: 1px solid var(--bd);
+}
+
+.demo-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.demo-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bd);
+}
+
+.demo-url {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 40px;
+  font-size: 12px;
+  color: var(--mu);
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+}
+
+/* .app are înălțimea paginii în aplicație; în fereastră ocupă doar spațiul de sub bara de titlu */
+.demo-window .app {
+  position: relative;
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
+.demo-sbl {
+  flex: 1;
+  overflow: hidden;
+  padding: 0 8px;
+}
+
+/* „Fotbal" apăsat: același fundal ca la hover în bara laterală */
+.demo-sport {
+  position: relative;
+}
+
+.demo-sport > :not(.demo-press) {
+  position: relative;
+}
+
+.demo-press {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: var(--bd);
+}
+
+/* zona principală, ca <main class="content"> din layout */
+.demo-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.07), rgba(234, 88, 12, 0.05) 70%, transparent);
+}
+
+/* ca #ct din layout, fără scroll propriu: DemoLobby o derulează cu transform */
+.demo-ct {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 16px 20px;
+}
+
+/* fereastra modală, peste toată aplicația din fereastră (ca .ov, dar nu peste toată pagina) */
+.demo-ov {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: #0007;
+}
+
+.demo-ov .mb {
+  max-height: 96%;
+  overflow: hidden;
+}
+
+/* zilele din calendar sunt puțin mai scunde decât pătratele din aplicație, ca tot modalul să încapă în fereastră */
+.demo-window .d {
+  aspect-ratio: auto;
+  height: 34px;
+}
+
+/* butonul rotund „+" din header e <span>, nu buton: centrăm semnul
+   (.b.plus, ca să nu fie anulat de regula .demo-window .b de mai jos) */
+.demo-window .b.plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* chenarul albastru discret în jurul lobby-ului ales */
+.demo-pick {
+  position: relative;
+}
+
+.demo-pick-ring {
+  position: absolute;
+  inset: 2px -8px;
+  border: 1.5px solid #2563eb;
+  border-radius: 8px;
+}
+
+.demo-lobby {
+  position: relative;
+}
+
+.demo-name {
+  color: var(--tx);
+}
+
+.demo-stars {
+  color: #f59e0b;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.demo-check {
+  color: #16a34a;
+  width: 16px;
+  height: 16px;
+}
+
+.demo-row-value {
+  gap: 6px;
+}
+
+/* bara de locuri: aceeași ca în lobby, dar crește cu scaleX în loc de width */
+.demo-bar-fill {
+  width: 100%;
+  transform-origin: left;
+}
+
+/* stelele din review: cea gri dedesubt, cea galbenă deasupra */
+.demo-star {
+  position: relative;
+  display: inline-block;
+}
+
+.demo-star .on {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.demo-disabled {
+  opacity: 0.4;
+}
+
+/* butoanele din fereastră sunt <span>: fără inline-block, marginea de sus (review-send) nu s-ar aplica */
+.demo-window .b {
+  display: inline-block;
+}
+
+/* ---------- varianta statică (ecrane mici și reduce motion) ---------- */
+
+.story-static {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 16px 24px;
+}
+
+.story-step {
+  margin: 64px 0 96px;
+  text-align: center;
+  /* ca titlul să nu ajungă sub bara de sus când se derulează până la o etapă */
+  scroll-margin-top: var(--landing-bar);
+}
+
+.story-step .story-frame {
+  margin-top: 28px;
+  text-align: left;
+}
+
+.demo-window.fluid {
+  height: auto;
+}
+
+.demo-window.fluid .demo-ct {
+  overflow: visible;
+}
+
+/* modalul calendarului apare în pagină, nu peste ea */
+.demo-window.fluid .demo-ov {
+  position: static;
+  display: block;
+  padding: 0;
+  background: none;
+}
+
+.demo-window.fluid .demo-ov .mb {
+  max-height: none;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .demo-window .city-search {
+    display: none;
+  }
+
+  /* bara laterală are doar iconițe pe ecrane înguste: eticheta SPORTURI nu mai încape */
+  .demo-window .demo-sbl > .mu {
+    display: none;
+  }
+
+  .demo-window .demo-ct {
+    padding: 12px;
+  }
+
+  .demo-url {
+    padding: 2px 16px;
+  }
+}
+
+/* ---------- deschiderea în varianta statică ---------- */
+
+.hero-static {
+  padding: 72px 16px 8px;
+}
+
+/* ---------- fraza care se aprinde la scroll ---------- */
+
+.reveal {
+  position: relative;
+  height: 220vh;
+}
+
+.reveal-sticky {
+  position: sticky;
+  top: var(--landing-bar);
+  height: calc(100vh - var(--landing-bar));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+.reveal-text {
+  margin: 0;
+  max-width: 980px;
+  font-size: clamp(30px, 4.4vw, 60px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  text-align: center;
+}
+
+.reveal.still {
+  height: auto;
+  display: flex;
+  justify-content: center;
+  padding: 96px 20px;
+}
+
+/* ---------- Pe scurt ---------- */
+
+.highlights {
+  padding: 120px max(20px, calc((100% - 1080px) / 2));
+  background: var(--sf);
+}
+
+.section-title {
+  margin: 0 0 40px;
+  font-size: clamp(40px, 5.6vw, 72px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
+  padding: 36px 32px;
+  border-radius: 28px;
+  background: var(--bg);
+}
+
+.tile.wide {
+  grid-column: span 2;
+}
+
+.tile.full {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
+.tile-big {
+  margin: 0;
+  font-size: clamp(32px, 3.4vw, 48px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.tile-text {
+  margin: auto 0 0;
+  padding-top: 24px;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--mu);
+}
+
+.tile-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.tile-icons .ic {
+  width: 26px;
+  height: 26px;
+}
+
+@media (max-width: 900px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .highlights {
+    padding: 80px 16px;
+  }
+
+  .tiles {
+    grid-template-columns: 1fr;
+  }
+
+  .tile.wide {
+    grid-column: auto;
+  }
+
+  .tile {
+    min-height: 0;
+    padding: 28px 24px;
+  }
+}
+
+/* ---------- finalul: îndemnul, pe fundal negru ---------- */
+
+.landing-cta {
+  padding: 140px 20px;
+  text-align: center;
+  background: #000;
+  color: #f5f5f7;
+}
+
+.landing-cta h2 {
+  margin: 0;
+  font-size: clamp(40px, 6vw, 80px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+}
+
+.landing-cta p {
+  margin: 20px auto 0;
+  max-width: 560px;
+  font-size: clamp(17px, 1.7vw, 21px);
+  color: #a1a1a6;
+}
+
+.landing-cta .text-link {
+  color: #4b8bf5;
+}
+
+.landing-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding: 20px max(20px, calc((100% - 1080px) / 2)) 28px;
+  font-size: 12px;
+  color: var(--mu);
+  background: var(--sf);
+  border-top: 1px solid var(--bd);
+}
+
+.landing-footer-links {
+  display: flex;
+  gap: 20px;
+}
+
+.landing-footer a {
+  color: var(--mu);
+  text-decoration: none;
+}
+
+.landing-footer a:hover {
+  color: var(--tx);
+  text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing *,
+  .landing *::before,
+  .landing *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

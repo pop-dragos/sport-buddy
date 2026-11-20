@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Layout from './layout/Layout'
 import HomePage from './features/home/HomePage'
@@ -9,10 +10,14 @@ import SettingsPage from './features/profile/SettingsPage'
 import LoginPage from './features/auth/LoginPage'
 import RequireAuth from './features/auth/RequireAuth'
 
+// Pagina de prezentare se încarcă separat, ca biblioteca de animații să nu ajungă în restul aplicației.
+const LandingPage = lazy(() => import('./features/landing/LandingPage'))
+
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/bun-venit" element={<Suspense fallback={null}><LandingPage /></Suspense>} />
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />

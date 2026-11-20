@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { forgotPassword } from '../../api/auth'
 import { errorMessage } from '../../api/http'
 import { useAuth } from './useAuth'
@@ -40,7 +40,8 @@ export default function LoginPage() {
   const { status, user, login, loginWithProvider } = useAuth()
   const location = useLocation()
 
-  const [mode, setMode] = useState('in')
+  // „Creează cont" de pe pagina de prezentare deschide direct formularul de cont nou
+  const [mode, setMode] = useState(() => (location.state?.mode === 'up' ? 'up' : 'in'))
   const [socialSignup, setSocialSignup] = useState(null)
   const [identifier, setIdentifier] = useState(readRemembered)
   const [password, setPassword] = useState('')
@@ -165,6 +166,10 @@ export default function LoginPage() {
             </div>
 
             <SocialButtons label="sau conectează-te cu" onPick={social} disabled={busy} />
+
+            <div style={{ textAlign: 'center' }}>
+              <Link to="/bun-venit" className="al" style={{ textDecoration: 'none' }}>Vezi cum funcționează</Link>
+            </div>
           </>
         ) : (
           <>
