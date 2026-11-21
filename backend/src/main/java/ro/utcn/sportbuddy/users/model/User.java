@@ -41,6 +41,18 @@ public class User {
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean active = true;
 
+    // Contul e folosibil abia după confirmarea emailului. Conturile vechi și cele demo sunt considerate confirmate.
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean emailVerified = true;
+
+    // id-ul contului Google („sub” din token), după prima conectare cu Google
+    @Column(unique = true)
+    private String googleSubject;
+
+    // Crește la resetarea sau schimbarea parolei: token-urile vechi (de pe alte dispozitive) nu mai sunt acceptate.
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int tokenVersion;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -131,6 +143,30 @@ public class User {
 
     public void setCityId(Long cityId) {
         this.cityId = cityId;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public String getGoogleSubject() {
+        return googleSubject;
+    }
+
+    public void setGoogleSubject(String googleSubject) {
+        this.googleSubject = googleSubject;
+    }
+
+    public int getTokenVersion() {
+        return tokenVersion;
+    }
+
+    public void bumpTokenVersion() {
+        tokenVersion++;
     }
 
     public boolean isActive() {

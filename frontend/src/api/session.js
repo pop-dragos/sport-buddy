@@ -26,6 +26,17 @@ export function saveToken(token, remember) {
   }
 }
 
+// Token nou pentru aceeași sesiune (după schimbarea parolei): rămâne unde era și cel vechi.
+export function replaceToken(token) {
+  let remembered = false
+  try {
+    remembered = sessionStorage.getItem(TOKEN_KEY) === null && localStorage.getItem(TOKEN_KEY) !== null
+  } catch {
+    // fără stocare: îl ținem doar pentru tab
+  }
+  saveToken(token, remembered)
+}
+
 export function clearToken() {
   try {
     localStorage.removeItem(TOKEN_KEY)

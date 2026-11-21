@@ -1,24 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import { getCities, getSports } from '../../api/catalog'
 import { errorMessage } from '../../api/http'
+import { uploadSignupAvatar } from '../../api/auth'
 import { uploadAvatar } from '../../api/users'
 import { AVATAR_TYPES, avatarProblem } from '../profile/avatarRules'
 import { useAuth } from './useAuth'
-import PasswordInput from './PasswordInput'
+import NewPasswordFields from './NewPasswordFields'
+import { passwordProblem } from './passwordRules'
 
 const MIN_AGE = 16
 const MAX_AGE = 99
-const MIN_PASSWORD = 6
 // Prototipul nu cere nivelul la cont nou; îl pot schimba ulterior din profil.
 const DEFAULT_LEVEL = 'INTERMEDIATE'
 
-// social: null pentru cont cu email și parolă, sau { provider, fullName, email } pentru Google / iCloud
-export default function SignupForm({ social }) {
+// social: null pentru cont cu email și parolă, sau { provider, fullName, email, signupToken? } pentru Google / iCloud.
+// Cu signupToken (Google real), emailul e cel confirmat de Google și nu se poate schimba.
+// onVerificationSent(email): contul cu parolă a fost creat și așteaptă confirmarea emailului.
+export default function SignupForm({ social, onVerificationSent }) {
   const { register, updateUser } = useAuth()
 
   const [fullName, setFullName] = useState(social?.fullName ?? '')
   const [email, setEmail] = useState(social?.email ?? '')
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [age, setAge] = useState('')
   const [phone, setPhone] = useState('')
   const [cityId, setCityId] = useState('')
@@ -69,8 +73,11 @@ export default function SignupForm({ social }) {
   function validate() {
     if (!fullName.trim()) return 'Numele este obligatoriu.'
     if (!email.trim()) return 'Emailul este obligatoriu.'
-    if (!social && password.length < MIN_PASSWORD) {
-      return `Parola trebuie să aibă minimum ${MIN_PASSWORD} caractere.`
+    if (!social) {
+      const problem = passwordProblem(password)
+      if (problem) return problem
+      if (!confirm) return 'Confirmă parola.'
+      if (confirm !== password) return 'Parolele nu coincid.'
     }
     const years = Number(age)
     if (!age || years < MIN_AGE) return `Vârsta minimă este ${MIN_AGE}.`
@@ -88,17 +95,23 @@ export default function SignupForm({ social }) {
     setBusy(true)
     setError('')
     try {
-      await register({
+      const res = await register({
         fullName: fullName.trim(),
         email: email.trim(),
-        ...(social ? { authProvider: social.provider } : { password }),
+        ...(social ? { authProvider: social.provider, googleSignupToken: social.signupToken } : { password }),
         age: Number(age),
         phone: phone.trim() || undefined,
         ...(cityId && { cityId: Number(cityId) }),
         sports: sportIds.map((sportId) => ({ sportId, level: DEFAULT_LEVEL }))
       })
-      // Poza se încarcă după crearea contului, cu token-ul primit. Tipul și mărimea au fost verificate la alegere;
+      // Poza se încarcă după crearea contului. Tipul și mărimea au fost verificate la alegere;
       // dacă totuși nu reușește, contul rămâne creat și poza se poate pune din Setări.
+      if (res.needsVerification) {
+        // încă nu există sesiune: poza merge cu setupToken-ul primit
+        if (photo) await uploadSignupAvatar(photo, res.setupToken).catch(() => {})
+        onVerificationSent(res.email)
+        return
+      }
       if (photo) uploadAvatar(photo).then(updateUser).catch(() => {})
     } catch (err) {
       setError(errorMessage(err))
@@ -116,17 +129,15 @@ export default function SignupForm({ social }) {
       <input
         type="email"
         placeholder="Email *"
+        aria-label="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         autoComplete="email"
+        readOnly={Boolean(social?.signupToken)}
+        title={social?.signupToken ? 'Emailul contului Google' : undefined}
       />
       {!social && (
-        <PasswordInput
-          value={password}
-          onChange={setPassword}
-          placeholder={`Parolă * (minim ${MIN_PASSWORD} caractere)`}
-          autoComplete="new-password"
-        />
+        <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
       )}
       <input
         type="number"

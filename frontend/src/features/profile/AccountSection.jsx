@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { forgotPassword } from '../../api/auth'
 import { errorMessage } from '../../api/http'
 import { updateMe, updateSports } from '../../api/users'
 import { useAuth } from '../auth/useAuth'
@@ -24,7 +25,19 @@ export default function AccountSection({ sports, cities }) {
 
   const [sportsMessage, setSportsMessage] = useState('')
   const [modal, setModal] = useState(null)
-  const [passwordChanged, setPasswordChanged] = useState(false)
+  // mesajul de lângă butonul de parolă (schimbată / link de setare trimis)
+  const [passwordNote, setPasswordNote] = useState('')
+
+  // Contul Google fără parolă: parola se setează din linkul trimis pe email, ca la resetare.
+  async function sendSetPasswordLink() {
+    setPasswordNote('')
+    try {
+      await forgotPassword(user.email)
+      setPasswordNote(`Ți-am trimis pe ${user.email} un link pentru setarea parolei.`)
+    } catch (e) {
+      setPasswordNote(errorMessage(e))
+    }
+  }
 
   async function save() {
     const years = Number(age)
@@ -125,8 +138,12 @@ export default function AccountSection({ sports, cities }) {
         <div className="pl">
           <span>Parolă</span>
           <span className="r">
-            {passwordChanged && <span className="mu">Parola a fost schimbată.</span>}
-            <button type="button" className="b o" onClick={() => setModal('password')}>Schimbă parola</button>
+            {passwordNote && <span className="mu">{passwordNote}</span>}
+            {user.hasPassword === false ? (
+              <button type="button" className="b o" onClick={sendSetPasswordLink}>Setează o parolă</button>
+            ) : (
+              <button type="button" className="b o" onClick={() => setModal('password')}>Schimbă parola</button>
+            )}
           </span>
         </div>
         <div className="pl">
@@ -138,7 +155,7 @@ export default function AccountSection({ sports, cities }) {
       {modal === 'password' && (
         <ChangePasswordModal
           onClose={() => setModal(null)}
-          onDone={() => { setModal(null); setPasswordChanged(true) }}
+          onDone={() => { setModal(null); setPasswordNote('Parola a fost schimbată. Celelalte dispozitive au fost deconectate.') }}
         />
       )}
       {modal === 'delete' && <DeleteAccountModal onClose={() => setModal(null)} />}

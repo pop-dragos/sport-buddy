@@ -87,8 +87,12 @@ export default function AuthProvider({ children }) {
     startSession(await authApi.login(identifier, password, remember), remember)
   }
 
+  // Cont cu parolă: întoarce { needsVerification, email, setupToken } și nu conectează (emailul trebuie confirmat).
+  // Cont Google / simulat: conectează direct.
   async function register(data) {
-    startSession(await authApi.register(data), false)
+    const res = await authApi.register(data)
+    if (res.token) startSession(res, false)
+    return res
   }
 
   // Întoarce { needsSignup, profile } când contul nu există încă; altfel conectează utilizatorul.
@@ -98,6 +102,18 @@ export default function AuthProvider({ children }) {
     return res
   }
 
+  // La fel, cu token-ul primit de la butonul Google (plus signupToken pentru terminarea înregistrării).
+  async function loginWithGoogle(credential, remember) {
+    const res = await authApi.google(credential, remember)
+    if (res.token) startSession(res, remember)
+    return res
+  }
+
+  // Linkul de confirmare din email conectează direct utilizatorul.
+  async function verifyEmail(token) {
+    startSession(await authApi.verifyEmail(token), false)
+  }
+
   function logout() {
     clearToken()
     endSession()
@@ -105,7 +121,10 @@ export default function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, status, expiredUserId, login, register, loginWithProvider, logout, updateUser: setUser }}
+      value={{
+        user, status, expiredUserId, login, register, loginWithProvider, loginWithGoogle, verifyEmail, logout,
+        updateUser: setUser
+      }}
     >
       {children}
     </AuthContext.Provider>

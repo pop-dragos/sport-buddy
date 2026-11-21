@@ -590,6 +590,153 @@ main,
   font-weight: 600;
 }
 
+input[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+/* mesaj neutru: email retrimis, parolă schimbată, server fără email configurat */
+.note {
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+/* bara de putere a parolei: patru segmente care se colorează pe rând */
+.pwm {
+  --pwm-c: var(--bd);
+  margin-top: 8px;
+}
+
+.pwm[data-score="1"] { --pwm-c: #dc2626; }
+.pwm[data-score="2"] { --pwm-c: #ea8a0c; }
+.pwm[data-score="3"] { --pwm-c: #65a30d; }
+.pwm[data-score="4"] { --pwm-c: #16a34a; }
+
+.pwm-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.pwm-bar i {
+  height: 4px;
+  border-radius: 99px;
+  background: var(--bd);
+  transition: background-color 0.25s ease;
+}
+
+.pwm-bar i.on {
+  background: var(--pwm-c);
+}
+
+.pwm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.pwm-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  font-size: 12px;
+  color: var(--mu);
+}
+
+.pwm-rules li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease;
+}
+
+.pwm-rules svg {
+  width: 12px;
+  height: 12px;
+}
+
+.pwm-rules li.ok {
+  color: #16a34a;
+}
+
+.pwm-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pwm-c);
+  white-space: nowrap;
+}
+
+.pwm-match {
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.pwm-match.bad { color: #dc2626; }
+.pwm-match.good { color: #16a34a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pwm-bar i, .pwm-rules li { transition: none; }
+}
+
+/* butonul oficial Google: ocupă lățimea cardului, ca butoanele de lângă el */
+.gbtn {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+  color-scheme: normal;
+}
+
+.gbtn.off {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* „Verifică-ți emailul” */
+.ce {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+
+.ce p {
+  margin: 0;
+}
+
+.ce-ic {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sf);
+  color: #2563eb;
+}
+
+.ce-ic svg {
+  width: 28px;
+  height: 28px;
+}
+
+.ce-mail {
+  word-break: break-all;
+}
+
+.cpw {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
 
 /* ---------- formulare, comutatoare, ferestre ---------- */
 

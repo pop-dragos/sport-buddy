@@ -8,6 +8,9 @@ import FriendsPage from './features/friends/FriendsPage'
 import ProfilePage from './features/profile/ProfilePage'
 import SettingsPage from './features/profile/SettingsPage'
 import LoginPage from './features/auth/LoginPage'
+import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
+import ResetPasswordPage from './features/auth/ResetPasswordPage'
+import VerifyEmailPage from './features/auth/VerifyEmailPage'
 import RequireAuth from './features/auth/RequireAuth'
 
 // Pagina de prezentare se încarcă separat, ca biblioteca de animații să nu ajungă în restul aplicației.
@@ -17,6 +20,10 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      {/* deschise din linkurile trimise pe email */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/bun-venit" element={<Suspense fallback={null}><LandingPage /></Suspense>} />
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>

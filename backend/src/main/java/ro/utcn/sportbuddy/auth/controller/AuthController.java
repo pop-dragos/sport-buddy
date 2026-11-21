@@ -2,10 +2,13 @@ package ro.utcn.sportbuddy.auth.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import ro.utcn.sportbuddy.auth.dto.*;
+import org.springframework.web.multipart.MultipartFile;
 import ro.utcn.sportbuddy.auth.service.AuthService;
 
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -18,10 +21,23 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @GetMapping("/config")
+    public AuthConfigResponse config() {
+        return authService.config();
+    }
+
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public AuthResponse register(@Valid @RequestBody RegisterRequest req) {
+    public RegisterResponse register(@Valid @RequestBody RegisterRequest req) {
         return authService.register(req);
+    }
+
+    // poza din formularul de cont nou, cu setupToken-ul primit la /register
+    @PostMapping(value = "/signup-avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void signupAvatar(@RequestHeader("X-Setup-Token") String setupToken,
+                             @RequestParam("file") MultipartFile file) throws IOException {
+        authService.uploadSignupAvatar(setupToken, file.getBytes());
     }
 
     @PostMapping("/login")
@@ -29,15 +45,41 @@ public class AuthController {
         return authService.login(req);
     }
 
-    // Simulat: nu trimite nimic și nu arată dacă există contul.
-    @PostMapping("/forgot-password")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public Map<String, String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
-        return Map.of("message", "Dacă există un cont, vei primi un email.");
+    @PostMapping("/google")
+    public SocialResponse google(@Valid @RequestBody GoogleLoginRequest req) {
+        return authService.google(req);
     }
 
+    // conectare simulată (iCloud)
     @PostMapping("/social")
     public SocialResponse social(@Valid @RequestBody SocialRequest req) {
         return authService.social(req);
+    }
+
+    @PostMapping("/verify-email")
+    public AuthResponse verifyEmail(@Valid @RequestBody TokenRequest req) {
+        return authService.verifyEmail(req);
+    }
+
+    // Răspunsul e același dacă există sau nu contul.
+    @PostMapping("/resend-verification")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Map<String, String> resendVerification(@Valid @RequestBody ForgotPasswordRequest req) {
+        authService.resendVerification(req);
+        return Map.of("message", "Dacă există un cont neconfirmat, vei primi un email cu linkul de confirmare.");
+    }
+
+    // Răspunsul e același dacă există sau nu contul.
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Map<String, String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+        authService.forgotPassword(req);
+        return Map.of("message", "Dacă există un cont, vei primi un email cu linkul de resetare.");
+    }
+
+    @PostMapping("/reset-password")
+    public Map<String, String> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        authService.resetPassword(req);
+        return Map.of("message", "Parola a fost schimbată. Te poți conecta cu parola nouă.");
     }
 }
