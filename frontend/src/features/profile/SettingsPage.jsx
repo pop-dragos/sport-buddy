@@ -37,7 +37,7 @@ export default function SettingsPage() {
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
-      <div className="r" style={{ flexWrap: 'wrap', marginBottom: 12 }}>
+      <div className="r segmented" style={{ marginBottom: 12 }}>
         {SECTIONS.map(([key, label]) => (
           <button key={key} type="button" className={`chip ${section === key ? 'on' : ''}`} onClick={() => setSection(key)}>
             {label}

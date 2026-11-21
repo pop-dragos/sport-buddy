@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMyLobbies } from '../../api/lobbies'
+import Skeleton from '../../shared/Skeleton'
 import { formatDay, formatTime } from '../home/format'
 import './lobbies.css'
 
@@ -32,13 +33,20 @@ export default function AgendaPage() {
   }, [])
 
   if (error) return <div className="lobby-page card">Agenda nu este disponibilă acum.</div>
-  if (!lists) return <div className="lobby-page mu">Se încarcă...</div>
+  if (!lists) {
+    return (
+      <div className="lobby-page">
+        <Skeleton lines={2} />
+        <Skeleton lines={2} />
+      </div>
+    )
+  }
 
   const lobbies = lists[tab]
 
   return (
     <div className="lobby-page">
-      <div className="r agenda-tabs">
+      <div className="r segmented agenda-tabs">
         {TABS.map((t) => (
           <button key={t.key} className={`chip ${tab === t.key ? 'on' : ''}`} onClick={() => setTab(t.key)}>
             {t.label} ({lists[t.key].length})

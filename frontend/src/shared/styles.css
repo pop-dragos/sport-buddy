@@ -11,6 +11,8 @@
   --at: #fff;
   --card: rgba(252, 252, 250, 0.72);
   --card-bd: rgba(17, 17, 17, 0.08);
+  --active: #2563eb;
+  --seg-active: #fff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,6 +26,8 @@
     --at: #111;
     --card: rgba(24, 24, 24, 0.62);
     --card-bd: rgba(255, 255, 255, 0.08);
+    --active: #3b82f6;
+    --seg-active: #2c2c2c;
   }
 }
 
@@ -37,6 +41,8 @@
   --at: #111;
   --card: rgba(24, 24, 24, 0.62);
   --card-bd: rgba(255, 255, 255, 0.08);
+  --active: #3b82f6;
+  --seg-active: #2c2c2c;
 }
 
 * {
@@ -184,7 +190,7 @@ aside {
 
 .si.active {
   background: rgba(37, 99, 235, 0.14);
-  color: #3b82f6;
+  color: var(--active);
   font-weight: 500;
 }
 
@@ -802,4 +808,245 @@ input[aria-invalid="true"] {
 
 .mb h3 {
   margin: 0 0 12px;
+}
+
+/* ---------- Atingere și accesibilitate (după Apple Human Interface Guidelines) ---------- */
+
+/* Fără fulgerul gri al browserului la atingere: răspunsul vizual vine din :active */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Răspuns la apăsare: butonul se micșorează discret cât e ținut apăsat */
+.b,
+.chip,
+.plus,
+.si,
+.d,
+.star,
+.bottom-nav-item,
+.sports-sheet-item,
+.sports-sheet-close {
+  transition: transform 0.12s ease, opacity 0.12s ease, background-color 0.2s ease;
+}
+
+.b:active:not(:disabled),
+.chip:active,
+.plus:active,
+.si:active,
+.d:active,
+.bottom-nav-item:active,
+.sports-sheet-item:active,
+.sports-sheet-close:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+.star:active {
+  transform: scale(0.9);
+}
+
+/* Inel de focus doar la navigarea cu tastatura (Tab), nu la click sau atingere */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Pe telefon: zone de atingere de minimum 44px și câmpuri de 16px
+   (sub 16px, Safari pe iPhone mărește pagina când apeși într-un câmp) */
+@media (max-width: 640px) {
+  .b {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .chip {
+    min-height: 44px;
+    padding: 8px 14px;
+  }
+
+  .plus {
+    width: 44px;
+    height: 44px;
+  }
+
+  .sw {
+    width: 46px;
+    height: 28px;
+  }
+
+  .sw::after {
+    width: 22px;
+    height: 22px;
+  }
+
+  .sw.on::after {
+    left: 21px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+
+/* Cine a cerut în sistem mai puțină mișcare nu vede animații și tranziții */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ---------- Finisaj în stilul Apple ---------- */
+
+/* Titluri puțin mai strânse, ca textul să pară mai compact (Inter seamănă deja cu fontul Apple) */
+h1,
+h2,
+h3,
+.lobby-title,
+.home-greeting {
+  letter-spacing: -0.015em;
+}
+
+/* Header translucid, ca bara de sus din iOS: se vede discret fundalul paginii.
+   Blur-ul îl pune într-un strat separat, deci are nevoie de z-index ca lista de orașe
+   să iasă deasupra cardurilor (rămâne sub ferestre și sub lista de sporturi). */
+header {
+  position: relative;
+  z-index: 10;
+  background: var(--card);
+  border-bottom-color: var(--card-bd);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Ferestrele apar lin: fundalul se întunecă, fereastra crește ușor din centru */
+@keyframes sb-fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes sb-pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+}
+
+@keyframes sb-sheet-up {
+  from { transform: translateY(100%); }
+}
+
+.ov {
+  animation: sb-fade-in 0.2s ease;
+}
+
+.mb {
+  animation: sb-pop-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Bara de prindere a foilor de jos: există doar pe telefon */
+.mb-grab {
+  display: none;
+}
+
+/* Control segmentat (filtrele din Agendă, secțiunile din Setări): un singur bloc, segmentul ales iese în relief */
+.segmented {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: var(--sf);
+  scrollbar-width: none;
+}
+
+.segmented::-webkit-scrollbar {
+  display: none;
+}
+
+.segmented .chip {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--mu);
+  white-space: nowrap;
+}
+
+.segmented .chip.on {
+  background: var(--seg-active);
+  color: var(--tx);
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Schelet de încărcare: forme gri care pulsează în locul conținutului */
+@keyframes sb-pulse {
+  50% { opacity: 0.45; }
+}
+
+.sk {
+  height: 12px;
+  margin: 10px 0;
+  border-radius: 6px;
+  background: var(--bd);
+  animation: sb-pulse 1.4s ease-in-out infinite;
+}
+
+.sk-title {
+  width: 40%;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.sk:last-child {
+  width: 70%;
+}
+
+@media (max-width: 640px) {
+  /* Pe telefon, ferestrele devin foi care urcă de jos, mai ușor de folosit cu degetul mare */
+  .ov {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .mb {
+    max-width: none;
+    max-height: 88dvh;
+    padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+    animation: sb-sheet-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .mb-grab {
+    display: block;
+    margin: 0 -16px 6px;
+    padding: 10px 0 8px;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .mb-grab span {
+    display: block;
+    width: 36px;
+    height: 5px;
+    margin: 0 auto;
+    border-radius: 3px;
+    background: var(--bd);
+  }
+
+  .segmented .chip {
+    min-height: 40px;
+  }
 }

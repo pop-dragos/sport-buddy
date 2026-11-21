@@ -10,6 +10,7 @@ import PaymentModal from '../payments/PaymentModal'
 import LobbyChat from '../chat/LobbyChat'
 import ReviewCard from '../ratings/ReviewCard'
 import Avatar from '../../shared/Avatar'
+import Skeleton from '../../shared/Skeleton'
 import { useAuth } from '../auth/useAuth'
 import { formatDay, formatRating, formatTime } from '../home/format'
 import './lobbies.css'
@@ -81,7 +82,15 @@ export default function LobbyPage() {
       </div>
     )
   }
-  if (!lobby) return <div className="lobby-page mu">Se încarcă...</div>
+  if (!lobby) {
+    return (
+      <div className="lobby-page">
+        {back}
+        <Skeleton lines={4} />
+        <Skeleton lines={3} />
+      </div>
+    )
+  }
 
   return (
     <div className="lobby-page">

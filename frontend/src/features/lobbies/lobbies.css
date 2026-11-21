@@ -22,8 +22,11 @@
   cursor: pointer;
 }
 
-.d:hover {
-  background: var(--sf);
+/* doar cu mouse-ul: pe telefon, hover-ul ar rămâne „lipit” pe ziua atinsă */
+@media (hover: hover) {
+  .d:hover {
+    background: var(--sf);
+  }
 }
 
 .d.td {
@@ -165,8 +168,8 @@
 
 /* ---------- agenda ---------- */
 
+/* filtrele sunt un control segmentat (shared/styles.css); pe ecran îngust derulează orizontal */
 .agenda-tabs {
-  flex-wrap: wrap;
   margin-bottom: 14px;
 }
 
