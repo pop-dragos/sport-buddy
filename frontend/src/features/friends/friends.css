@@ -33,3 +33,24 @@
 .chat .m b {
   font-weight: 600;
 }
+
+.direct-message-form {
+  min-width: 0;
+}
+
+.direct-message-form input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
+}
+
+.direct-message-form button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .direct-message-chat {
+    height: clamp(100px, 28dvh, 180px);
+  }
+}
