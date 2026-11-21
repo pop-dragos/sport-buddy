@@ -1,7 +1,7 @@
 /* Calendarul, după prototipul din docs/sportbuddy.html */
 .cal {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 3px;
   text-align: center;
   margin: 8px 0;
@@ -106,14 +106,14 @@
 /* Data / Ora / Organizator / Locuri */
 .lobby-facts {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin: 16px 0 14px;
 }
 
 @media (max-width: 640px) {
   .lobby-facts {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

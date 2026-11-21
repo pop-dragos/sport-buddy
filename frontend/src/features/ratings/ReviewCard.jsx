@@ -48,7 +48,7 @@ export default function ReviewCard({ lobbyId, onSubmitted }) {
             {!sent && pending?.length === 0 && <div className="mu">Nu mai ai pe nimeni de notat la acest meci.</div>}
 
             {!sent && pending?.map((p) => (
-                <div key={p.userId} className="pl">
+                <div key={p.userId} className="pl review-row">
                     <span>{p.username}</span>
                     <span className="r">
                         {STARS.map((n) => (

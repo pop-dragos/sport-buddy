@@ -69,3 +69,19 @@
   font-weight: 600;
   white-space: nowrap;
 }
+
+@media (max-width: 640px) {
+  .feed-text,
+  .feed-comment {
+    overflow-wrap: anywhere;
+  }
+
+  .feed-chips {
+    gap: 6px;
+  }
+
+  .feed-author {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
