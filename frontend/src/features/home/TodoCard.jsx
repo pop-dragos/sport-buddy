@@ -14,9 +14,9 @@ export default function TodoCard({ todo }) {
         <div className="card">
             <div className="mu">De făcut</div>
             {rows.map(([label, count]) => (
-                <div key={label} className="pl">
+                <div key={label} className="pl todo-row">
                     <span>{label}</span>
-                    <button className="chip" onClick={() => navigate('/agenda')}>{count}</button>
+                    <button className="chip todo-count" onClick={() => navigate('/agenda')}>{count}</button>
                 </div>
             ))}
         </div>

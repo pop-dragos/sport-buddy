@@ -13,3 +13,18 @@
     gap: 2px;
     text-align: center;
 }
+
+@media (max-width: 640px) {
+    .weather-days {
+        gap: 2px;
+    }
+
+    .weather-day {
+        min-width: 0;
+        font-size: 11px;
+    }
+
+    .weather-day .mu {
+        font-size: 11px;
+    }
+}

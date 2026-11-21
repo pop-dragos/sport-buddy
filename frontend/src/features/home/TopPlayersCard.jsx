@@ -8,7 +8,7 @@ export default function TopPlayersCard({ players }) {
             <div className="mu home-title">Top jucători</div>
             {players.length === 0 && <div className="mu">Apar după primele review-uri.</div>}
             {players.map((p, i) => (
-                <div key={p.userId} className="pl">
+                <div key={p.userId} className="pl home-player-row">
                     <Link to={`/profile/${p.userId}`} className="home-player">
                         <span>{i + 1}.</span>
                         <Avatar name={p.username} url={p.avatarUrl} size={24} />
