@@ -35,7 +35,7 @@ export default function WeatherWidget({ cityId, cityName }) {
             <div className="mu">Vremea în {cityName}</div>
 
             {error && <div className="mu">Prognoza nu este disponibilă acum.</div>}
-            {!error && !data && <div className="mu">Se încarcă...</div>}
+            {!error && !data && <><div className="sk" /><div className="sk" /></>}
 
             {data && (
                 <>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getDashboard } from '../../api/dashboard'
 import { getSettings } from '../../api/users'
+import Skeleton from '../../shared/Skeleton'
 import { useAuth } from '../auth/useAuth'
 import { useCity } from '../catalog/useCity'
 import Feed from '../feed/Feed'
@@ -15,6 +16,7 @@ import './home.css'
 export default function HomePage() {
     const { user } = useAuth()
     const { city } = useCity()
+    // null = se încarcă (apar scheletele), false = n-a putut fi încărcat
     const [dashboard, setDashboard] = useState(null)
     // null cât timp nu știm setarea; widget-ul apare doar după, ca să nu clipească
     const [showWeather, setShowWeather] = useState(null)
@@ -32,7 +34,7 @@ export default function HomePage() {
         let cancelled = false
         getDashboard(city.id)
             .then((d) => { if (!cancelled) setDashboard(d) })
-            .catch(() => { if (!cancelled) setDashboard(null) })
+            .catch(() => { if (!cancelled) setDashboard(false) })
         return () => { cancelled = true }
     }, [city])
 
@@ -43,6 +45,13 @@ export default function HomePage() {
             <div>
                 <h3 className="home-greeting">Bună, {firstName}</h3>
                 <ProfileCompletionCard completion={user.profileCompletion} />
+
+                {dashboard === null && (
+                    <div className="g">
+                        <Skeleton lines={2} />
+                        <Skeleton lines={2} />
+                    </div>
+                )}
 
                 {dashboard && (
                     <div className="g">

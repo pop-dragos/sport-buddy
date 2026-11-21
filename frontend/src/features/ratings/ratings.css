@@ -9,8 +9,21 @@
     opacity: 0.3;
 }
 
-.star:hover {
-    opacity: 0.7;
+/* doar cu mouse-ul: pe telefon, hover-ul ar rămâne „lipit” după atingere */
+@media (hover: hover) {
+    .star:hover {
+        opacity: 0.7;
+    }
+}
+
+/* pe telefon, stele mai mari și mai distanțate, ca să nu apeși nota greșită */
+@media (max-width: 640px) {
+    .star {
+        width: 40px;
+        height: 44px;
+        font-size: 30px;
+        padding: 0;
+    }
 }
 
 .star.on {
