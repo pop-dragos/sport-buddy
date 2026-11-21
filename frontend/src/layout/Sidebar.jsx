@@ -83,7 +83,7 @@ export default function Sidebar() {
           <span>Prieteni</span>
         </NavLink>
 
-        <div className="mu" style={{ padding: '10px 10px 4px' }}>SPORTURI</div>
+        <div className="mu sports-label" style={{ padding: '10px 10px 4px' }}>SPORTURI</div>
 
         {error && <div className="mu" style={{ padding: '4px 10px' }}>Sporturile nu sunt disponibile.</div>}
 

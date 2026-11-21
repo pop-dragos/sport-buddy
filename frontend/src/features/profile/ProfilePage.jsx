@@ -127,7 +127,7 @@ function ProfileView({ id }) {
           <div className="mu">Niciun sport adăugat. Le poți alege din setări.</div>
         )}
         {profile.sports.map((s) => (
-          <div className="pl" key={s.sportId}>
+          <div className="pl profile-sport-row" key={s.sportId}>
             <span>{sportName(s.sportId)}</span>
             <span className="tag">{levelLabel(s.level)}</span>
           </div>

@@ -58,6 +58,7 @@ button {
 }
 
 input, select, textarea {
+  min-width: 0;
   font: inherit;
   color: var(--tx);
   background: var(--bg);
@@ -115,7 +116,7 @@ input, select, textarea {
 
 .g {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -338,11 +339,146 @@ header h2 {
   align-items: center;
 }
 
+.r > input {
+  flex: 1 1 0;
+  width: auto;
+}
+
+.r > .b {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
   .g { grid-template-columns: 1fr; }
   aside { width: 64px; }
   .si span, .logo span, .um .nm { display: none; }
   .si { justify-content: center; }
+}
+
+/* Permite elementelor flex și grid să se micșoreze în loc să lărgească pagina. */
+.app,
+main,
+#ct,
+.page,
+.page-wide,
+.card,
+.top,
+.pl,
+.r {
+  min-width: 0;
+}
+
+#ct {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  header {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  header h2 {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  header > .r {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  #ct {
+    padding: 12px;
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  aside {
+    min-height: 0;
+  }
+
+  #sbl {
+    min-height: 0;
+    overscroll-behavior: contain;
+  }
+
+  .sports-label {
+    display: none;
+  }
+
+  .um {
+    flex: 0 0 auto;
+  }
+
+  .top,
+  .pl {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .top > .r,
+  .pl > .r,
+  .pl > .lobby-rating {
+    width: 100%;
+  }
+
+  .top > .r,
+  .pl > .r {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .top > .tag,
+  .top > .r > .tag,
+  .pl > .tag {
+    align-self: flex-start;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .top > .r > button,
+  .top > .r > a.b,
+  .pl > .r > button {
+    width: auto;
+    max-width: 100%;
+    align-self: flex-start;
+  }
+
+  .top > .b,
+  .top > a.b {
+    width: auto;
+    align-self: flex-start;
+  }
+
+  .pl > .r > .b {
+    width: auto;
+    align-self: flex-start;
+  }
+
+  .pl.review-row {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .pl.profile-sport-row {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .pl.review-row > .r {
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+  }
 }
 
 /* ---------- conectare și cont nou ---------- */

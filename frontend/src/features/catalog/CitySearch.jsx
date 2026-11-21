@@ -25,7 +25,6 @@ export default function CitySearch() {
   const [active, setActive] = useState(0)
   // true = lista cu toate orașele, deschisă din săgeată
   const [showAll, setShowAll] = useState(false)
-  const inputRef = useRef(null)
   const activeRef = useRef(null)
 
   const typing = text !== null && text.trim() !== ''
@@ -56,7 +55,6 @@ export default function CitySearch() {
     const current = cities.findIndex((c) => c.id === city?.id)
     setActive(Math.max(0, current))
     setShowAll(true)
-    inputRef.current.focus()
   }
 
   function onKeyDown(e) {
@@ -73,10 +71,15 @@ export default function CitySearch() {
     }
   }
 
+  function onToggleKeyDown(e) {
+    if (e.key === 'Escape' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      onKeyDown(e)
+    }
+  }
+
   return (
     <div className="city-search">
       <input
-        ref={inputRef}
         value={text ?? city?.name ?? ''}
         onChange={(e) => {
           setText(e.target.value)
@@ -91,11 +94,8 @@ export default function CitySearch() {
         type="button"
         className="city-toggle"
         title="Toate orașele"
-        onMouseDown={(e) => {
-          // fără asta, click-ul ar scoate focusul din câmp și lista s-ar închide
-          e.preventDefault()
-          toggleAll()
-        }}
+        onClick={toggleAll}
+        onKeyDown={onToggleKeyDown}
       >
         ▾
       </button>
