@@ -46,6 +46,16 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
+		<!-- emailurile de confirmare a contului și de resetare a parolei (SMTP, de exemplu Gmail) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+		<!-- verificarea semnăturii token-urilor de la Google (conectarea cu Google) -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-oauth2-jose</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.postgresql</groupId>

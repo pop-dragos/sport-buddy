@@ -1,3 +1,13 @@
 spring.datasource.username=postgres
 spring.datasource.password=parola_ta_locala
 app.jwt.secret=schimba-cu-un-secret-lung-de-minim-32-de-caractere
+
+# --- Email prin Gmail (opțional). Parola de aici e o „parolă de aplicație” de 16 litere, nu parola contului.
+#spring.mail.host=smtp.gmail.com
+#spring.mail.port=587
+#spring.mail.username=adresa.ta@gmail.com
+#spring.mail.password=xxxxxxxxxxxxxxxx
+#app.mail.from=SportBuddy <adresa.ta@gmail.com>
+
+# --- Conectarea cu Google (opțional): Client ID-ul de tip „Web application” din Google Cloud Console
+#app.google.client-id=1234567890-abc.apps.googleusercontent.com

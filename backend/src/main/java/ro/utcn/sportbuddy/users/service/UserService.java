@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.security.PasswordPolicy;
 import ro.utcn.sportbuddy.users.dto.*;
 import ro.utcn.sportbuddy.users.model.*;
 import ro.utcn.sportbuddy.users.repository.UserRepository;
@@ -81,11 +82,68 @@ public class UserService {
         return userRepository.findById(id).map(User::isActive).orElse(false);
     }
 
-    public Optional<UserCredentials> findCredentials(String identifier) {
+    // O sesiune e valabilă cât timp contul e activ și parola nu s-a schimbat de când a fost emis token-ul.
+    public boolean isSessionValid(Long id, int tokenVersion) {
+        return userRepository.findById(id)
+                .filter(User::isActive)
+                .map(u -> u.getTokenVersion() == tokenVersion)
+                .orElse(false);
+    }
+
+    // ---------- pentru autentificare ----------
+
+    // după username sau email
+    public Optional<AuthAccount> findAccount(String identifier) {
         return userRepository.findByUsernameIgnoreCase(identifier)
                 .or(() -> userRepository.findByEmailIgnoreCase(identifier))
                 .filter(User::isActive)
-                .map(u -> new UserCredentials(u.getId(), u.getPasswordHash()));
+                .map(UserService::toAccount);
+    }
+
+    public Optional<AuthAccount> findAccountByEmail(String email) {
+        return userRepository.findByEmailIgnoreCase(email).filter(User::isActive).map(UserService::toAccount);
+    }
+
+    public Optional<AuthAccount> findAccountByGoogleSubject(String subject) {
+        return userRepository.findByGoogleSubject(subject).filter(User::isActive).map(UserService::toAccount);
+    }
+
+    public Optional<AuthAccount> findAccount(Long id) {
+        return userRepository.findById(id).filter(User::isActive).map(UserService::toAccount);
+    }
+
+    @Transactional
+    public void markEmailVerified(Long id) {
+        getEntity(id).setEmailVerified(true);
+    }
+
+    // Prima conectare cu Google a unui cont existent (același email, confirmat de Google).
+    // Dacă emailul contului nu fusese confirmat, parola lui nu e de încredere: cine a creat contul
+    // poate să nu fie proprietarul emailului. O ștergem; proprietarul își poate seta alta prin resetare.
+    @Transactional
+    public void linkGoogle(Long id, String subject) {
+        User u = getEntity(id);
+        if (!u.isEmailVerified()) {
+            u.setPasswordHash(null);
+            u.bumpTokenVersion();
+        }
+        u.setGoogleSubject(subject);
+        u.setEmailVerified(true);
+    }
+
+    // Din linkul primit pe email: emailul e dovedit, iar celelalte sesiuni se închid.
+    @Transactional
+    public void resetPassword(Long id, String newPassword) {
+        PasswordPolicy.check(newPassword, "newPassword");
+        User u = getEntity(id);
+        u.setPasswordHash(passwordEncoder.encode(newPassword));
+        u.setEmailVerified(true);
+        u.bumpTokenVersion();
+    }
+
+    private static AuthAccount toAccount(User u) {
+        return new AuthAccount(u.getId(), u.getFullName(), u.getEmail(), u.getPasswordHash(),
+                u.isEmailVerified(), u.getGoogleSubject(), u.getTokenVersion());
     }
 
     @Transactional(readOnly = true)
@@ -99,6 +157,14 @@ public class UserService {
     public Long createUser(String fullName, String email, String passwordHash, Integer age,
                            String phone, Long cityId, String bio, AuthProvider provider,
                            List<SportLevelDto> sports) {
+        return createUser(fullName, email, passwordHash, age, phone, cityId, bio, provider, sports, true, null);
+    }
+
+    // emailVerified = false: contul nu se poate folosi până la confirmarea emailului.
+    @Transactional
+    public Long createUser(String fullName, String email, String passwordHash, Integer age,
+                           String phone, Long cityId, String bio, AuthProvider provider,
+                           List<SportLevelDto> sports, boolean emailVerified, String googleSubject) {
         Map<Long, SportLevel> chosenSports = validatedSports(sports);
         User u = new User();
         u.setUsername(generateUsername(fullName, email));
@@ -110,6 +176,8 @@ public class UserService {
         u.setPhone(phone);
         u.setCityId(cityId);
         u.setBio(bio);
+        u.setEmailVerified(emailVerified);
+        u.setGoogleSubject(googleSubject);
         userRepository.save(u);
         chosenSports.forEach((sportId, level) ->
                 userSportRepository.save(new UserSport(u.getId(), sportId, level)));
@@ -164,13 +232,21 @@ public class UserService {
         return toMe(u);
     }
 
+    // Întoarce noua versiune a sesiunilor: celelalte dispozitive sunt deconectate,
+    // iar cel de pe care s-a schimbat parola primește un token nou.
     @Transactional
-    public void changePassword(Long id, String currentPassword, String newPassword) {
+    public int changePassword(Long id, String currentPassword, String newPassword) {
         User u = getEntity(id);
         if (u.getPasswordHash() == null || !passwordEncoder.matches(currentPassword, u.getPasswordHash())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "WRONG_PASSWORD", "Parola curentă este greșită.");
         }
+        PasswordPolicy.check(newPassword, "newPassword");
+        if (passwordEncoder.matches(newPassword, u.getPasswordHash())) {
+            throw invalid("newPassword", "Parola nouă trebuie să fie diferită de cea curentă.");
+        }
         u.setPasswordHash(passwordEncoder.encode(newPassword));
+        u.bumpTokenVersion();
+        return u.getTokenVersion();
     }
 
     // Contul devine inactiv și anonimizat. Rândul rămâne, ca lobby-urile și review-urile să nu se strice.
@@ -181,6 +257,8 @@ public class UserService {
         u.setUsername("sters-" + id);
         u.setFullName("Utilizator șters");
         u.setEmail("sters-" + id + "@sters.invalid");
+        u.setGoogleSubject(null);
+        u.bumpTokenVersion();
         u.setPasswordHash(null);
         u.setPhone(null);
         avatarStorage.delete(u.getPhotoPath());
@@ -395,7 +473,8 @@ public class UserService {
         List<SportLevelDto> sports = sportsOf(u.getId());
         return new UserMe(u.getId(), u.getUsername(), u.getFullName(), u.getEmail(), u.getPhone(),
                 u.getAge(), avatarUrl(u), u.getCityId(), u.getBio(),
-                LocalDateTime.ofInstant(u.getCreatedAt(), ZONE), sports, completion(u, sports));
+                LocalDateTime.ofInstant(u.getCreatedAt(), ZONE), sports, completion(u, sports),
+                u.getPasswordHash() != null);
     }
 
     private static String avatarUrl(User u) {

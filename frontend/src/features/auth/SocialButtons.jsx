@@ -1,3 +1,5 @@
+import GoogleButton from './GoogleButton'
+
 const GoogleLogo = (
   <svg width="18" height="18" viewBox="0 0 24 24">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -13,13 +15,19 @@ const AppleLogo = (
   </svg>
 )
 
-export default function SocialButtons({ label, onPick, disabled }) {
+// googleClientId: cu el, butonul Google e cel real; fără el (neconfigurat), conectarea Google e simulată.
+// onGoogleCredential primește token-ul dat de Google; onPick(provider) e pentru conectarea simulată.
+export default function SocialButtons({ label, onPick, onGoogleCredential, googleClientId, googleText, disabled }) {
   return (
     <>
       <div className="sep">{label}</div>
-      <button type="button" className="soc" disabled={disabled} onClick={() => onPick('GOOGLE')}>
-        {GoogleLogo}Google
-      </button>
+      {googleClientId ? (
+        <GoogleButton clientId={googleClientId} onCredential={onGoogleCredential} text={googleText} disabled={disabled} />
+      ) : (
+        <button type="button" className="soc" disabled={disabled} onClick={() => onPick('GOOGLE')}>
+          {GoogleLogo}Google
+        </button>
+      )}
       <button type="button" className="soc" disabled={disabled} onClick={() => onPick('ICLOUD')}>
         {AppleLogo}iCloud
       </button>

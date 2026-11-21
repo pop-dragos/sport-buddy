@@ -212,7 +212,7 @@ class UserServiceTest {
         ana.setPasswordHash(encoder.encode("demo123"));
 
         ApiException e = assertThrows(ApiException.class,
-                () -> service.changePassword(1L, "gresita", "parolaNoua"));
+                () -> service.changePassword(1L, "gresita", "parolaNoua1"));
 
         assertEquals("WRONG_PASSWORD", e.getCode());
         assertTrue(encoder.matches("demo123", ana.getPasswordHash()));
@@ -222,17 +222,81 @@ class UserServiceTest {
     void changePasswordStoresNewHash() {
         ana.setPasswordHash(encoder.encode("demo123"));
 
-        service.changePassword(1L, "demo123", "parolaNoua");
+        service.changePassword(1L, "demo123", "parolaNoua1");
 
-        assertTrue(encoder.matches("parolaNoua", ana.getPasswordHash()));
-        assertNotEquals("parolaNoua", ana.getPasswordHash());
+        assertTrue(encoder.matches("parolaNoua1", ana.getPasswordHash()));
+        assertNotEquals("parolaNoua1", ana.getPasswordHash());
+    }
+
+    @Test
+    void changePasswordEndsOtherSessions() {
+        ana.setPasswordHash(encoder.encode("demo123"));
+        assertTrue(service.isSessionValid(1L, 0));
+
+        int version = service.changePassword(1L, "demo123", "parolaNoua1");
+
+        assertEquals(1, version);
+        assertFalse(service.isSessionValid(1L, 0));
+        assertTrue(service.isSessionValid(1L, 1));
+    }
+
+    @Test
+    void changePasswordAppliesPasswordPolicy() {
+        ana.setPasswordHash(encoder.encode("demo123"));
+
+        ApiException e = assertThrows(ApiException.class,
+                () -> service.changePassword(1L, "demo123", "faracifre"));
+
+        assertTrue(e.getFields().containsKey("newPassword"));
+        assertTrue(encoder.matches("demo123", ana.getPasswordHash()));
+    }
+
+    @Test
+    void changePasswordRejectsSamePassword() {
+        ana.setPasswordHash(encoder.encode("parola123"));
+        ApiException e = assertThrows(ApiException.class,
+                () -> service.changePassword(1L, "parola123", "parola123"));
+        assertTrue(e.getFields().containsKey("newPassword"));
+    }
+
+    @Test
+    void resetPasswordConfirmsEmailAndEndsSessions() {
+        ana.setEmailVerified(false);
+
+        service.resetPassword(1L, "parolaNoua1");
+
+        assertTrue(encoder.matches("parolaNoua1", ana.getPasswordHash()));
+        assertTrue(ana.isEmailVerified());
+        assertFalse(service.isSessionValid(1L, 0));
+    }
+
+    @Test
+    void linkingGoogleToUnconfirmedAccountDropsItsPassword() {
+        ana.setPasswordHash("hash-pus-de-altcineva");
+        ana.setEmailVerified(false);
+
+        service.linkGoogle(1L, "google-sub-1");
+
+        assertNull(ana.getPasswordHash());
+        assertTrue(ana.isEmailVerified());
+        assertEquals("google-sub-1", ana.getGoogleSubject());
+    }
+
+    @Test
+    void linkingGoogleToConfirmedAccountKeepsPassword() {
+        ana.setPasswordHash("hash");
+
+        service.linkGoogle(1L, "google-sub-1");
+
+        assertEquals("hash", ana.getPasswordHash());
+        assertTrue(service.isSessionValid(1L, 0));
     }
 
     @Test
     void socialAccountWithoutPasswordCannotChangeIt() {
         ana.setPasswordHash(null);
         ApiException e = assertThrows(ApiException.class,
-                () -> service.changePassword(1L, "orice", "parolaNoua"));
+                () -> service.changePassword(1L, "orice", "parolaNoua1"));
         assertEquals("WRONG_PASSWORD", e.getCode());
     }
 
@@ -257,7 +321,7 @@ class UserServiceTest {
         assertNull(ana.getCityId());
         verify(userSports).deleteByUserId(1L);
         assertFalse(service.isActive(1L));
-        assertTrue(service.findCredentials("ana").isEmpty());
+        assertTrue(service.findAccount("ana").isEmpty());
     }
 
     @Test

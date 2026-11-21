@@ -27,10 +27,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain chain) throws ServletException, IOException {
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
-            jwtService.parse(header.substring(7))
-                    .filter(userService::isActive)
-                    .ifPresent(id -> SecurityContextHolder.getContext().setAuthentication(
-                            new UsernamePasswordAuthenticationToken(id, null, List.of())));
+            // token-ul trebuie să fie emis după ultima schimbare de parolă (versiunea din token = cea din cont)
+            jwtService.parseSession(header.substring(7))
+                    .filter(s -> userService.isSessionValid(s.userId(), s.version()))
+                    .ifPresent(s -> SecurityContextHolder.getContext().setAuthentication(
+                            new UsernamePasswordAuthenticationToken(s.userId(), null, List.of())));
         }
         chain.doFilter(request, response);
     }
