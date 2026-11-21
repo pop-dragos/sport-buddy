@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../features/auth/useAuth'
 import Avatar from '../shared/Avatar'
@@ -26,9 +26,9 @@ const ICONS = {
   )
 }
 
-function MenuIcon({ name }) {
+function MenuIcon({ name, className = 'ic' }) {
   return (
-    <svg className="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {ICONS[name]}
     </svg>
@@ -37,30 +37,71 @@ function MenuIcon({ name }) {
 
 const itemStyle = { display: 'flex', alignItems: 'center', gap: 10 }
 
-export default function UserMenu() {
-  const [showPop, setShowPop] = useState(false)
+export default function UserMenu({ variant = 'sidebar', open: controlledOpen, onToggle, active = false }) {
+  const [localOpen, setLocalOpen] = useState(false)
   const { user, logout } = useAuth()
+  const menuRef = useRef(null)
+  const controlled = typeof controlledOpen === 'boolean'
+  const showPop = controlled ? controlledOpen : localOpen
+
+  const setShowPop = useCallback((nextOpen) => {
+    if (controlled) onToggle?.(nextOpen)
+    else setLocalOpen(nextOpen)
+  }, [controlled, onToggle])
+
+  useEffect(() => {
+    if (variant !== 'bottom' || !showPop) return undefined
+
+    const onPointerDown = (event) => {
+      if (!menuRef.current?.contains(event.target)) setShowPop(false)
+    }
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setShowPop(false)
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [variant, showPop, setShowPop])
 
   return (
-    <div className="um">
+    <div ref={menuRef} className={`um${variant === 'bottom' ? ' bottom-user-menu' : ''}`}>
       {showPop && (
-        <div id="pop">
-          <Link to={`/profile/${user.id}`} style={itemStyle} onClick={() => setShowPop(false)}>
+        <div id="pop" role="menu" aria-label="Meniu profil">
+          <Link to={`/profile/${user.id}`} role="menuitem" style={itemStyle} onClick={() => setShowPop(false)}>
             <MenuIcon name="profile" />Profilul meu
           </Link>
-          <Link to="/settings" style={itemStyle} onClick={() => setShowPop(false)}>
+          <Link to="/settings" role="menuitem" style={itemStyle} onClick={() => setShowPop(false)}>
             <MenuIcon name="settings" />Setări
           </Link>
-          <button style={itemStyle} onClick={() => { setShowPop(false); logout() }}>
+          <button role="menuitem" style={itemStyle} onClick={() => { setShowPop(false); logout() }}>
             <MenuIcon name="logout" />Ieși din cont
           </button>
         </div>
       )}
 
-      <button className="si" onClick={() => setShowPop(!showPop)}>
-        <Avatar name={user.fullName} url={user.avatarUrl} />
-        <span className="nm">{user.username}</span>
-      </button>
+      {variant === 'bottom' ? (
+        <button
+          type="button"
+          className={`bottom-nav-item${active || showPop ? ' active' : ''}`}
+          aria-label="Profil"
+          aria-haspopup="menu"
+          aria-expanded={showPop}
+          aria-current={active ? 'page' : undefined}
+          onClick={() => setShowPop(!showPop)}
+        >
+          <MenuIcon name="profile" className="bottom-nav-icon" />
+          <span>Profil</span>
+        </button>
+      ) : (
+        <button className="si" aria-label="Meniu profil" aria-expanded={showPop} onClick={() => setShowPop(!showPop)}>
+          <Avatar name={user.fullName} url={user.avatarUrl} />
+          <span className="nm">{user.username}</span>
+        </button>
+      )}
     </div>
   )
 }

@@ -78,7 +78,7 @@ export default function CalendarModal({ sport, onClose }) {
 
     return (
         <Modal title={`${sport.name} în ${city?.name ?? '...'}: alege ziua`} onClose={onClose}>
-            <div className="top">
+            <div className="top calendar-month-nav">
                 <button className="b o" onClick={() => changeMonth(-1)}>‹</button>
                 <b>{monthTitle}</b>
                 <button className="b o" onClick={() => changeMonth(1)}>›</button>

@@ -43,7 +43,7 @@ export default function MessagesModal({ friend, onClose }) {
         .catch(() => {})
     }, POLL_MS)
 
-    input.current?.focus()
+    if (!window.matchMedia('(max-width: 640px)').matches) input.current?.focus()
     return () => {
       cancelled = true
       clearInterval(timer)
@@ -69,7 +69,7 @@ export default function MessagesModal({ friend, onClose }) {
 
   return (
     <Modal title={friend.username} onClose={onClose}>
-      <div className="chat" ref={box}>
+      <div className="chat direct-message-chat" ref={box}>
         {messages === null && !error && <div className="mu">Se încarcă...</div>}
         {messages?.length === 0 && <div className="mu">Nu ai scris încă nimic.</div>}
         {messages?.map((m) => (
@@ -78,7 +78,7 @@ export default function MessagesModal({ friend, onClose }) {
           </div>
         ))}
       </div>
-      <form className="r" onSubmit={send}>
+      <form className="r direct-message-form" onSubmit={send}>
         <input ref={input} placeholder="Mesaj" maxLength={1000} value={draft} onChange={(e) => setDraft(e.target.value)} />
         <button type="submit" className="b">Trimite</button>
       </form>
