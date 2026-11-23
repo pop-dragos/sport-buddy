@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import ro.utcn.sportbuddy.auth.dto.*;
 import org.springframework.web.multipart.MultipartFile;
 import ro.utcn.sportbuddy.auth.service.AuthService;
+import ro.utcn.sportbuddy.auth.service.EmailChangeService;
 
 import java.io.IOException;
 import java.util.Map;
@@ -16,9 +17,11 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailChangeService emailChangeService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, EmailChangeService emailChangeService) {
         this.authService = authService;
+        this.emailChangeService = emailChangeService;
     }
 
     @GetMapping("/config")
@@ -59,6 +62,13 @@ public class AuthController {
     @PostMapping("/verify-email")
     public AuthResponse verifyEmail(@Valid @RequestBody TokenRequest req) {
         return authService.verifyEmail(req);
+    }
+
+    // Linkul trimis la emailul nou, după o schimbare cerută din Setări. Merge și fără conectare.
+    @PostMapping("/confirm-email")
+    public Map<String, String> confirmEmail(@Valid @RequestBody TokenRequest req) {
+        String email = emailChangeService.confirm(req);
+        return Map.of("message", "Emailul contului este acum " + email + ".", "email", email);
     }
 
     // Răspunsul e același dacă există sau nu contul.

@@ -67,6 +67,8 @@ export default function LandingPage() {
         <span className="landing-footer-links">
           <Link to="/login">Conectează-te</Link>
           <Link to="/login" state={{ mode: 'up' }}>Creează cont</Link>
+          <Link to="/termeni">Termeni</Link>
+          <Link to="/confidentialitate">Confidențialitate</Link>
         </span>
       </footer>
     </div>

@@ -38,13 +38,26 @@ public class MailService {
         return sender.getIfAvailable() != null;
     }
 
+    // Email doar informativ, fără link (de exemplu avertizarea trimisă la adresa veche când se schimbă emailul).
+    @Async
+    public void sendNotice(String to, String subject, String greeting, String text, String footer) {
+        send(to, subject, greeting, text, null, null, footer);
+    }
+
     // Email simplu: un salut, un paragraf, un buton cu linkul și linkul scris în clar sub el.
     @Async
     public void sendLink(String to, String subject, String greeting, String text, String buttonLabel,
                          String link, String footer) {
+        send(to, subject, greeting, text, buttonLabel, link, footer);
+    }
+
+    // link = null: email fără buton
+    private void send(String to, String subject, String greeting, String text, String buttonLabel,
+                      String link, String footer) {
         JavaMailSender mail = sender.getIfAvailable();
         if (mail == null) {
-            log.warn("Email neconfigurat (spring.mail.host lipsește). Către {}: [{}] -> {}", to, subject, link);
+            log.warn("Email neconfigurat (spring.mail.host lipsește). Către {}: [{}] -> {}", to, subject,
+                    link == null ? text : link);
             return;
         }
         try {
@@ -63,10 +76,22 @@ public class MailService {
     }
 
     private static String plain(String greeting, String text, String link, String footer) {
-        return greeting + "\n\n" + text + "\n\n" + link + "\n\n" + footer + "\n\nSportBuddy";
+        String linkPart = link == null ? "" : link + "\n\n";
+        return greeting + "\n\n" + text + "\n\n" + linkPart + footer + "\n\nSportBuddy";
     }
 
     private static String html(String greeting, String text, String buttonLabel, String link, String footer) {
+        if (link == null) {
+            return """
+                    <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#1d1d1f">
+                      <div style="font-size:20px;font-weight:700;margin-bottom:24px">SportBuddy</div>
+                      <p style="font-size:16px;margin:0 0 12px">%s</p>
+                      <p style="font-size:15px;line-height:1.5;margin:0 0 16px;color:#424245">%s</p>
+                      <p style="font-size:13px;line-height:1.5;margin:0;color:#6e6e73">%s</p>
+                    </div>
+                    """.formatted(HtmlUtils.htmlEscape(greeting), HtmlUtils.htmlEscape(text),
+                    HtmlUtils.htmlEscape(footer));
+        }
         String l = HtmlUtils.htmlEscape(link);
         return """
                 <div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#1d1d1f">

@@ -25,11 +25,11 @@ export default function SocialButtons({ label, onPick, onGoogleCredential, googl
         <GoogleButton clientId={googleClientId} onCredential={onGoogleCredential} text={googleText} disabled={disabled} />
       ) : (
         <button type="button" className="soc" disabled={disabled} onClick={() => onPick('GOOGLE')}>
-          {GoogleLogo}Google
+          {GoogleLogo}Google <span className="sim">(simulat)</span>
         </button>
       )}
       <button type="button" className="soc" disabled={disabled} onClick={() => onPick('ICLOUD')}>
-        {AppleLogo}iCloud
+        {AppleLogo}iCloud <span className="sim">(simulat)</span>
       </button>
     </>
   )

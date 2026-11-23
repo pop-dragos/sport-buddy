@@ -14,6 +14,14 @@ export const changePassword = (currentPassword, newPassword) =>
 
 export const deleteMe = () => send('DELETE', '/users/me')
 
+// Schimbarea emailului: linkul de confirmare merge la adresa nouă. Răspunsul e profilul, cu pendingEmail.
+export const requestEmailChange = (newEmail, currentPassword) =>
+  send('POST', '/users/me/email', { newEmail, currentPassword })
+
+export const resendEmailChange = () => send('POST', '/users/me/email/resend')
+
+export const cancelEmailChange = () => send('DELETE', '/users/me/email')
+
 export function uploadAvatar(file) {
   const body = new FormData()
   body.append('file', file)

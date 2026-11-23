@@ -110,16 +110,40 @@ class UserServiceTest {
     }
 
     @Test
-    void updateMeRejectsEmailUsedByAnotherUser() {
+    void updateMeDoesNotChangeEmailDirectly() {
+        ApiException e = assertThrows(ApiException.class,
+                () -> service.updateMe(1L, profile(null, "ana.noua@demo.ro", null, null, null, null)));
+
+        assertTrue(e.getFields().containsKey("email"));
+        assertEquals("ana@demo.ro", ana.getEmail());
+    }
+
+    @Test
+    void applyPendingEmailMakesItTheAccountEmail() {
+        ana.setPendingEmail("ana.noua@demo.ro");
+
+        assertEquals("ana.noua@demo.ro", service.applyPendingEmail(1L));
+
+        assertEquals("ana.noua@demo.ro", ana.getEmail());
+        assertNull(ana.getPendingEmail());
+        assertEquals("ana.noua@demo.ro", service.getMe(1L).email());
+    }
+
+    @Test
+    void applyPendingEmailFailsIfTakenInTheMeantime() {
+        ana.setPendingEmail("bogdan@demo.ro");
         when(users.findByEmailIgnoreCase("bogdan@demo.ro"))
                 .thenReturn(Optional.of(user(2L, "bogdan", "bogdan@demo.ro")));
 
-        ApiException e = assertThrows(ApiException.class,
-                () -> service.updateMe(1L, profile(null, "bogdan@demo.ro", null, null, null, null)));
+        ApiException e = assertThrows(ApiException.class, () -> service.applyPendingEmail(1L));
 
-        assertEquals(HttpStatus.CONFLICT, e.getStatus());
         assertEquals("EMAIL_TAKEN", e.getCode());
         assertEquals("ana@demo.ro", ana.getEmail());
+    }
+
+    @Test
+    void applyPendingEmailWithoutPendingFails() {
+        assertThrows(ApiException.class, () -> service.applyPendingEmail(1L));
     }
 
     @Test
