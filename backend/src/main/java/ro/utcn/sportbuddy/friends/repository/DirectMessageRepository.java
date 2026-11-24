@@ -26,6 +26,13 @@ public interface DirectMessageRepository extends JpaRepository<DirectMessage, Lo
             order by m.id asc""")
     List<DirectMessage> findAfter(Long a, Long b, Long afterId);
 
+    // cine mi-a scris și câte mesaje necitite am de la fiecare: rânduri [senderId, număr]
+    @Query("""
+            select m.senderId, count(m) from DirectMessage m
+            where m.recipientId = :me and m.readAt is null
+            group by m.senderId""")
+    List<Object[]> countUnreadBySender(Long me);
+
     @Modifying
     @Query("""
             update DirectMessage m set m.readAt = :now

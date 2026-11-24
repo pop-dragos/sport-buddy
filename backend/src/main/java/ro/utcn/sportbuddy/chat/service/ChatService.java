@@ -3,7 +3,9 @@ package ro.utcn.sportbuddy.chat.service;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import ro.utcn.sportbuddy.chat.dto.ChatMessageDto;
+import ro.utcn.sportbuddy.chat.model.LobbyChatRead;
 import ro.utcn.sportbuddy.chat.model.LobbyMessage;
+import ro.utcn.sportbuddy.chat.repository.LobbyChatReadRepository;
 import ro.utcn.sportbuddy.chat.repository.LobbyMessageRepository;
 import ro.utcn.sportbuddy.common.error.ApiException;
 import ro.utcn.sportbuddy.common.i18n.Messages;
@@ -16,8 +18,11 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatService {
@@ -25,12 +30,14 @@ public class ChatService {
     private static final ZoneId ZONE = ZoneId.of("Europe/Bucharest");
 
     private final LobbyMessageRepository messageRepository;
+    private final LobbyChatReadRepository readRepository;
     private final LobbyService lobbyService;
     private final UserService userService;
 
-    public ChatService(LobbyMessageRepository messageRepository, LobbyService lobbyService,
-                       UserService userService) {
+    public ChatService(LobbyMessageRepository messageRepository, LobbyChatReadRepository readRepository,
+                       LobbyService lobbyService, UserService userService) {
         this.messageRepository = messageRepository;
+        this.readRepository = readRepository;
         this.lobbyService = lobbyService;
         this.userService = userService;
     }
@@ -47,6 +54,11 @@ public class ChatService {
             messages = messageRepository.findByLobbyIdAndIdGreaterThanOrderByIdAsc(lobbyId, afterId);
         }
 
+        // cine citește mesajele le are citite: avansăm marcajul până la ultimul primit
+        if (!messages.isEmpty()) {
+            markRead(lobbyId, userId, messages.get(messages.size() - 1).getId());
+        }
+
         // un singur apel la UserService pentru fiecare autor, nu pentru fiecare mesaj
         Map<Long, String> usernames = new HashMap<>();
         return messages.stream().map(m -> toDto(m, usernames)).toList();
@@ -56,6 +68,34 @@ public class ChatService {
         requireParticipant(lobbyId, userId);
         LobbyMessage saved = messageRepository.save(new LobbyMessage(lobbyId, userId, false, text.trim()));
         return toDto(saved, new HashMap<>());
+    }
+
+    // Câte mesaje necitite (scrise de alții, fără cele de sistem) are utilizatorul în fiecare lobby al lui.
+    // Apar doar lobby-urile cu cel puțin unul necitit. Cine nu a deschis niciodată chat-ul le are pe toate necitite.
+    public Map<Long, Long> unreadByLobby(Long userId) {
+        Set<Long> lobbyIds = lobbyService.participatingLobbyIds(userId);
+        if (lobbyIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Long> lastRead = readRepository.findByUserIdAndLobbyIdIn(userId, lobbyIds).stream()
+                .collect(Collectors.toMap(LobbyChatRead::getLobbyId, LobbyChatRead::getLastReadId));
+
+        Map<Long, Long> unread = new LinkedHashMap<>();
+        for (Long lobbyId : lobbyIds) {
+            long count = messageRepository.countByLobbyIdAndSystemFalseAndSenderIdNotAndIdGreaterThan(
+                    lobbyId, userId, lastRead.getOrDefault(lobbyId, 0L));
+            if (count > 0) {
+                unread.put(lobbyId, count);
+            }
+        }
+        return unread;
+    }
+
+    private void markRead(Long lobbyId, Long userId, Long lastMessageId) {
+        LobbyChatRead read = readRepository.findByLobbyIdAndUserId(lobbyId, userId)
+                .orElseGet(() -> new LobbyChatRead(lobbyId, userId, 0L));
+        read.advanceTo(lastMessageId);
+        readRepository.save(read);
     }
 
     // Mesajele de sistem („X s-a înscris", „Lobby confirmat"), scrise de ChatEventListener.

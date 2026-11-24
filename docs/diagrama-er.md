@@ -241,7 +241,7 @@ erDiagram
 | `lobbies` | B | `lobbies`, `lobby_players`, `join_requests` |
 | `payments` | B | `payments` |
 | `ratings` | C | `reviews`, `user_rating_stats` |
-| `chat` | C | `lobby_messages` |
+| `chat` | C | `lobby_messages`, `lobby_chat_reads` |
 | `auth`, `weather`, `dashboard` | A, C | fără tabele proprii (`auth` folosește `users`; vremea se ține în memorie; `dashboard` doar citește din alte module) |
 
 ## Observații

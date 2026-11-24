@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getChatUnread } from '../../api/chat'
 import { getMyLobbies } from '../../api/lobbies'
 import Skeleton from '../../shared/Skeleton'
 import { trField } from '../../shared/i18n'
 import { useI18n } from '../../shared/i18n/useI18n'
 import { formatDay, formatTime } from '../home/format'
+import '../chat/chat.css'
 import './lobbies.css'
 
 const TAB_KEYS = ['UPCOMING', 'CREATED', 'REQUESTS', 'FINISHED']
@@ -16,6 +18,8 @@ export default function AgendaPage() {
   // listele tuturor taburilor, încărcate o dată, ca să afișăm și numărul de pe fiecare tab
   const [lists, setLists] = useState(null)
   const [error, setError] = useState(false)
+  // { [lobbyId]: mesaje necitite în chat }; dacă nu se încarcă, agenda merge fără insigne
+  const [unread, setUnread] = useState({})
 
   const tabLabels = {
     UPCOMING: t('Viitoare'),
@@ -33,6 +37,14 @@ export default function AgendaPage() {
         setLists(Object.fromEntries(TAB_KEYS.map((key, i) => [key, results[i]])))
       })
       .catch(() => { if (!cancelled) setError(true) })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    getChatUnread()
+      .then((res) => { if (!cancelled) setUnread(res) })
+      .catch(() => {})
     return () => { cancelled = true }
   }, [])
 
@@ -76,7 +88,14 @@ export default function AgendaPage() {
                 <span className="tag">{tn(l.pendingRequests, '{n} cerere', '{n} cereri')}</span>
               )}
               {l.status !== 'OPEN' && <span className="tag">{statusLabels[l.status]}</span>}
-              <button className="b o" onClick={() => navigate(`/lobbies/${l.id}`)}>{t('Deschide')}</button>
+              <button className="b o" onClick={() => navigate(`/lobbies/${l.id}`)}>
+                {t('Deschide')}
+                {unread[l.id] > 0 && (
+                  <span className="unread-badge" aria-label={tn(unread[l.id], '{n} mesaj nou', '{n} mesaje noi')}>
+                    {unread[l.id]}
+                  </span>
+                )}
+              </button>
             </span>
           </div>
         </div>

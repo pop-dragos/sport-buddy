@@ -642,6 +642,11 @@ public class LobbyService {
                 .collect(Collectors.toCollection(HashSet::new));
     }
 
+    // Pentru chat (C): lobby-urile în care utilizatorul e participant, deci are acces la chat.
+    public Set<Long> participatingLobbyIds(Long userId) {
+        return playedLobbyIds(userId);
+    }
+
     // lobby-urile în care utilizatorul a jucat sau joacă (fără cei care au ieșit sau au lipsit)
     private Set<Long> playedLobbyIds(Long userId) {
         return lobbyPlayerRepository.findByUserIdAndStatusIn(userId, PLAYED).stream()

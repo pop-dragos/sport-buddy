@@ -7,6 +7,7 @@ import { useT } from '../../shared/i18n/useI18n'
 import { useCatalog } from '../profile/useCatalog'
 import FriendRow from './FriendRow'
 import MessagesModal from './MessagesModal'
+import '../chat/chat.css'
 
 // căutare fără diacritice și fără majuscule, ca pe server
 function normalize(s) {
@@ -51,6 +52,12 @@ export default function FriendsPage() {
       setError(errorMessage(e))
     }
     setBusy(false)
+  }
+
+  // la închiderea ferestrei de mesaje, insigna prietenului dispare (mesajele s-au citit cât a fost deschisă)
+  function closeChat() {
+    setChatWith(null)
+    getFriends().then(setFriends).catch(() => {})
   }
 
   const sportNames = useMemo(() => Object.fromEntries(sports.map((s) => [s.code, t(s.name)])), [sports, t])
@@ -106,7 +113,12 @@ export default function FriendsPage() {
         )}
         {shown.map((f) => (
           <FriendRow key={f.userId} friend={f} sportNames={sportNames}>
-            <button type="button" className="b o" onClick={() => setChatWith(f)}>{t('Mesaj')}</button>
+            <button type="button" className="b o" onClick={() => setChatWith(f)}>
+              {t('Mesaj')}
+              {f.unreadMessages > 0 && (
+                <span className="unread-badge" aria-label={`${f.unreadMessages}`}>{f.unreadMessages}</span>
+              )}
+            </button>
           </FriendRow>
         ))}
       </div>
@@ -124,7 +136,7 @@ export default function FriendsPage() {
         ))}
       </div>
 
-      {chatWith && <MessagesModal friend={chatWith} onClose={() => setChatWith(null)} />}
+      {chatWith && <MessagesModal friend={chatWith} onClose={closeChat} />}
     </div>
   )
 }

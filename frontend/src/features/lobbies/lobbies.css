@@ -94,6 +94,12 @@
   font-size: 18px;
 }
 
+.lobby-share {
+  margin-top: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
 .lobby-small {
   font-size: 12px;
 }

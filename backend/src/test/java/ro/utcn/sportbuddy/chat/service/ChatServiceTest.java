@@ -4,7 +4,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import ro.utcn.sportbuddy.chat.dto.ChatMessageDto;
+import ro.utcn.sportbuddy.chat.model.LobbyChatRead;
 import ro.utcn.sportbuddy.chat.model.LobbyMessage;
+import ro.utcn.sportbuddy.chat.repository.LobbyChatReadRepository;
 import ro.utcn.sportbuddy.chat.repository.LobbyMessageRepository;
 import ro.utcn.sportbuddy.common.error.ApiException;
 import ro.utcn.sportbuddy.lobbies.dto.LobbyDetails;
@@ -13,11 +15,17 @@ import ro.utcn.sportbuddy.users.dto.UserSummary;
 import ro.utcn.sportbuddy.users.service.UserService;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 // Repository-ul și service-urile celorlalte module sunt simulate, deci testul nu are nevoie de bază de date.
@@ -28,6 +36,7 @@ class ChatServiceTest {
     private static final Long ANDREI = 2L;
 
     private LobbyMessageRepository messageRepository;
+    private LobbyChatReadRepository readRepository;
     private LobbyService lobbyService;
     private UserService userService;
     private ChatService chatService;
@@ -35,9 +44,10 @@ class ChatServiceTest {
     @BeforeEach
     void setUp() {
         messageRepository = mock(LobbyMessageRepository.class);
+        readRepository = mock(LobbyChatReadRepository.class);
         lobbyService = mock(LobbyService.class);
         userService = mock(UserService.class);
-        chatService = new ChatService(messageRepository, lobbyService, userService);
+        chatService = new ChatService(messageRepository, readRepository, lobbyService, userService);
 
         when(userService.getSummary(ANA)).thenReturn(new UserSummary(ANA, "ana", "Ana Popescu", "ana@ex.ro"));
         when(userService.getSummary(ANDREI)).thenReturn(new UserSummary(ANDREI, "andrei", "Andrei Ionescu", "andrei@ex.ro"));
@@ -96,8 +106,8 @@ class ChatServiceTest {
         when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
         // repository-ul le dă de la cel mai nou la cel mai vechi
         when(messageRepository.findTop100ByLobbyIdOrderByIdDesc(LOBBY)).thenReturn(List.of(
-                new LobbyMessage(LOBBY, ANDREI, false, "al doilea"),
-                new LobbyMessage(LOBBY, ANA, false, "primul")));
+                message(2L, ANDREI, "al doilea"),
+                message(1L, ANA, "primul")));
 
         List<ChatMessageDto> messages = chatService.getMessages(LOBBY, ANA, null);
 
@@ -108,7 +118,7 @@ class ChatServiceTest {
     void afterReturnsOnlyNewerMessages() {
         when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
         when(messageRepository.findByLobbyIdAndIdGreaterThanOrderByIdAsc(LOBBY, 120L))
-                .thenReturn(List.of(new LobbyMessage(LOBBY, ANDREI, false, "nou")));
+                .thenReturn(List.of(message(121L, ANDREI, "nou")));
 
         List<ChatMessageDto> messages = chatService.getMessages(LOBBY, ANA, 120L);
 
@@ -120,7 +130,7 @@ class ChatServiceTest {
     void systemMessageHasNoSender() {
         when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
         when(messageRepository.findTop100ByLobbyIdOrderByIdDesc(LOBBY))
-                .thenReturn(List.of(new LobbyMessage(LOBBY, null, true, "Lobby confirmat")));
+                .thenReturn(List.of(withId(7L, new LobbyMessage(LOBBY, null, true, "Lobby confirmat"))));
 
         ChatMessageDto dto = chatService.getMessages(LOBBY, ANA, null).get(0);
 
@@ -143,13 +153,82 @@ class ChatServiceTest {
     void eachAuthorIsLookedUpOnce() {
         when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
         when(messageRepository.findTop100ByLobbyIdOrderByIdDesc(LOBBY)).thenReturn(List.of(
-                new LobbyMessage(LOBBY, ANDREI, false, "3"),
-                new LobbyMessage(LOBBY, ANDREI, false, "2"),
-                new LobbyMessage(LOBBY, ANDREI, false, "1")));
+                message(3L, ANDREI, "3"),
+                message(2L, ANDREI, "2"),
+                message(1L, ANDREI, "1")));
 
         chatService.getMessages(LOBBY, ANA, null);
 
         verify(userService, times(1)).getSummary(ANDREI);
+    }
+
+    // ---------- mesaje necitite ----------
+
+    @Test
+    void readingMessagesMarksThemReadUpToTheLast() {
+        when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
+        when(messageRepository.findTop100ByLobbyIdOrderByIdDesc(LOBBY))
+                .thenReturn(List.of(message(12L, ANDREI, "b"), message(11L, ANDREI, "a")));
+
+        chatService.getMessages(LOBBY, ANA, null);
+
+        verify(readRepository).save(argThat(r ->
+                r.getLobbyId().equals(LOBBY) && r.getUserId().equals(ANA) && r.getLastReadId() == 12L));
+    }
+
+    @Test
+    void emptyPollDoesNotTouchTheReadMarker() {
+        when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
+        when(messageRepository.findByLobbyIdAndIdGreaterThanOrderByIdAsc(LOBBY, 12L)).thenReturn(List.of());
+
+        chatService.getMessages(LOBBY, ANA, 12L);
+
+        verifyNoInteractions(readRepository);
+    }
+
+    @Test
+    void readMarkerNeverMovesBackwards() {
+        when(lobbyService.isParticipant(LOBBY, ANA)).thenReturn(true);
+        when(readRepository.findByLobbyIdAndUserId(LOBBY, ANA)).thenReturn(Optional.of(new LobbyChatRead(LOBBY, ANA, 50L)));
+        when(messageRepository.findByLobbyIdAndIdGreaterThanOrderByIdAsc(LOBBY, 5L))
+                .thenReturn(List.of(message(20L, ANDREI, "vechi")));
+
+        chatService.getMessages(LOBBY, ANA, 5L);
+
+        verify(readRepository).save(argThat(r -> r.getLastReadId() == 50L));
+    }
+
+    @Test
+    void unreadCountsOnlyNewerMessagesFromOthers() {
+        when(lobbyService.participatingLobbyIds(ANA)).thenReturn(Set.of(LOBBY, 56L, 57L));
+        when(readRepository.findByUserIdAndLobbyIdIn(eq(ANA), any()))
+                .thenReturn(List.of(new LobbyChatRead(LOBBY, ANA, 100L), new LobbyChatRead(56L, ANA, 10L)));
+        when(messageRepository.countByLobbyIdAndSystemFalseAndSenderIdNotAndIdGreaterThan(LOBBY, ANA, 100L)).thenReturn(3L);
+        when(messageRepository.countByLobbyIdAndSystemFalseAndSenderIdNotAndIdGreaterThan(56L, ANA, 10L)).thenReturn(0L);
+        // lobby-ul 57: chat-ul nu a fost deschis niciodată, deci se numără de la început
+        when(messageRepository.countByLobbyIdAndSystemFalseAndSenderIdNotAndIdGreaterThan(57L, ANA, 0L)).thenReturn(2L);
+
+        Map<Long, Long> unread = chatService.unreadByLobby(ANA);
+
+        assertEquals(Map.of(LOBBY, 3L, 57L, 2L), unread);
+    }
+
+    @Test
+    void unreadIsEmptyWithoutLobbies() {
+        when(lobbyService.participatingLobbyIds(ANA)).thenReturn(Set.of());
+
+        assertTrue(chatService.unreadByLobby(ANA).isEmpty());
+        verifyNoInteractions(messageRepository);
+    }
+
+    // Mesajele din teste nu trec prin bază de date, deci id-ul li se pune de mână.
+    private static LobbyMessage message(Long id, Long senderId, String text) {
+        return withId(id, new LobbyMessage(LOBBY, senderId, false, text));
+    }
+
+    private static LobbyMessage withId(Long id, LobbyMessage m) {
+        ReflectionTestUtils.setField(m, "id", id);
+        return m;
     }
 
     // Lobby-ul există; conținutul nu contează pentru chat.

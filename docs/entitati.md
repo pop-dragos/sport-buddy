@@ -46,7 +46,7 @@ erDiagram
 | `lobbies` | B | `Lobby`, `LobbyPlayer`, `JoinRequest` |
 | `payments` | B | `Payment` |
 | `ratings` | C | `Review`, `UserRatingStats` |
-| `chat` | C | `LobbyMessage` |
+| `chat` | C | `LobbyMessage`, `LobbyChatRead` |
 | `weather`, `dashboard` | C | nu au tabele (vremea se ține în memorie, `dashboard` doar citește din alte module) |
 
 ---
@@ -294,6 +294,19 @@ Tabel de cache, recalculat la fiecare review nou, ca citirea ratingului să fie 
 | sentAt | Instant | |
 
 Doar membrii lobby-ului (status `JOINED` sau organizatorul) pot citi și scrie.
+
+### `LobbyChatRead` (`lobby_chat_reads`)
+
+Până la ce mesaj a citit fiecare participant chat-ul unui lobby; de aici vine numărul de mesaje necitite.
+
+| Câmp | Tip | Reguli |
+|---|---|---|
+| id | Long | PK |
+| lobbyId | Long | unic împreună cu `userId` |
+| userId | Long | |
+| lastReadId | Long | id-ul ultimului `LobbyMessage` citit; doar crește |
+
+Se actualizează când utilizatorul primește mesaje prin `GET /lobbies/{id}/messages`. Necitite sunt mesajele de utilizator (nu cele de sistem) ale altora, cu id mai mare decât `lastReadId`.
 
 ---
 

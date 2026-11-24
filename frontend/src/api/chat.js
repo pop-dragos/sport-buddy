@@ -9,3 +9,8 @@ export function getMessages(lobbyId, afterId) {
 export function sendMessage(lobbyId, message) {
     return http(`/lobbies/${lobbyId}/messages`, { method: 'POST', body: JSON.stringify({ message }) })
 }
+
+// { [lobbyId]: câte mesaje necitite }, doar pentru lobby-urile mele cu mesaje noi
+export function getChatUnread() {
+    return http('/lobbies/mine/chat-unread')
+}

@@ -125,7 +125,7 @@ Rating, fiabilitate și etichete vin din `GET /ratings/users/{id}` (C). Numărul
 
 | Metodă și cale | Rol |
 |---|---|
-| `GET /friends?query=` | lista prietenilor, cu căutare |
+| `GET /friends?query=` | lista prietenilor, cu căutare; fiecare are `unreadMessages` (mesaje directe necitite de la el) |
 | `GET /friends/of/{userId}` | prietenii altui utilizator, pentru profilul lui |
 | `GET /friends/suggestions` | „Posibili cunoscuți", din lobby-urile mele |
 | `GET /friends/requests` | cereri primite și trimise |
@@ -354,6 +354,9 @@ Pentru panoul de simulare din pagina lobby-ului (vizibil doar organizatorului, c
 |---|---|
 | `GET /lobbies/{id}/messages?after={messageId}` | mesajele chat-ului (interogare la 3 secunde) |
 | `POST /lobbies/{id}/messages` | trimite mesaj, corp `{ "message": "..." }` |
+| `GET /lobbies/mine/chat-unread` | mesaje necitite pe lobby: `{ "55": 3, "61": 1 }`; apar doar lobby-urile cu mesaje noi |
+
+Citirea mesajelor (`GET /lobbies/{id}/messages`) marchează chat-ul ca citit până la ultimul mesaj primit.
 
 Mesaj:
 ```json
