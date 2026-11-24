@@ -157,6 +157,49 @@
   text-decoration: underline;
 }
 
+/* „+ Prieten” sub numele participantului */
+.lobby-friend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.fr-mini {
+  font-size: 12px;
+  line-height: 1;
+  padding: 5px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--bd);
+  background: none;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.fr-mini.on {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.fr-mini:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.fr-mini-label {
+  font-size: 12px;
+  color: var(--mu);
+}
+
+@media (max-width: 640px) {
+  /* zonă de atingere mai mare pe telefon */
+  .fr-mini {
+    padding: 9px 14px;
+  }
+}
+
 .lobby-check {
   cursor: pointer;
 }

@@ -75,6 +75,49 @@ public class FriendService implements FriendshipChecker {
         return FriendStatus.none();
     }
 
+    // Starea față de mai mulți utilizatori deodată (de exemplu, participanții unui lobby), cu o singură
+    // interogare pentru relațiile mele. Pentru NONE spune și dacă pot trimite cerere (canAdd).
+    // Nu e readOnly: whoCanAddMe poate crea setările implicite ale unui utilizator vechi.
+    public static final int MAX_STATUSES = 100;
+
+    @Transactional
+    public Map<Long, FriendStatus> statuses(Long me, Collection<Long> ids) {
+        List<Long> others = ids.stream().filter(id -> id != null && !id.equals(me)).distinct().toList();
+        if (others.size() > MAX_STATUSES) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR",
+                    "Cel mult " + MAX_STATUSES + " de utilizatori odată.");
+        }
+        Map<Long, Friendship> relation = new HashMap<>();
+        Set<Long> myFriends = new HashSet<>();
+        for (Friendship f : friendshipRepository.findInvolving(me)) {
+            Long other = f.getRequesterId().equals(me) ? f.getAddresseeId() : f.getRequesterId();
+            if (f.isAccepted()) myFriends.add(other);
+            if (f.isAccepted() || f.isPending()) relation.merge(other, f, (a, b) -> a.isAccepted() ? a : b);
+        }
+
+        Map<Long, FriendStatus> result = new LinkedHashMap<>();
+        for (Long other : others) {
+            Friendship f = relation.get(other);
+            if (f != null && f.isAccepted()) {
+                result.put(other, new FriendStatus(FriendStatus.Status.FRIENDS, null));
+            } else if (f != null) {
+                result.put(other, new FriendStatus(f.getRequesterId().equals(me)
+                        ? FriendStatus.Status.PENDING_SENT : FriendStatus.Status.PENDING_RECEIVED, f.getId()));
+            } else {
+                result.put(other, new FriendStatus(FriendStatus.Status.NONE, null, canAdd(other, myFriends)));
+            }
+        }
+        return result;
+    }
+
+    // Aceleași reguli ca la trimiterea cererii (checkCanAdd), fără excepții.
+    private boolean canAdd(Long target, Set<Long> myFriends) {
+        if (!userService.isActive(target)) return false;
+        WhoCanAddMe rule = userService.whoCanAddMe(target);
+        if (rule == WhoCanAddMe.NOBODY) return false;
+        return rule != WhoCanAddMe.FRIENDS_OF_FRIENDS || !Collections.disjoint(myFriends, friendIds(target));
+    }
+
     // ---------- cereri ----------
 
     // Dacă celălalt mi-a trimis deja o cerere, a mea o acceptă direct: amândoi vor același lucru.

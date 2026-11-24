@@ -8,6 +8,7 @@ import ro.utcn.sportbuddy.friends.dto.*;
 import ro.utcn.sportbuddy.friends.service.FriendService;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/friends")
@@ -69,7 +70,13 @@ public class FriendController {
         friendService.removeFriend(CurrentUser.id(), userId);
     }
 
-    @GetMapping("/status/{userId}")
+    // ?ids=1,2,3: starea față de fiecare (de exemplu, participanții unui lobby), într-o singură cerere
+    @GetMapping("/statuses")
+    public Map<Long, FriendStatus> statuses(@RequestParam List<Long> ids) {
+        return friendService.statuses(CurrentUser.id(), ids);
+    }
+
+        @GetMapping("/status/{userId}")
     public FriendStatus status(@PathVariable Long userId) {
         return friendService.status(CurrentUser.id(), userId);
     }
