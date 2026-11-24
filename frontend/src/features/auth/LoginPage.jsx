@@ -222,7 +222,8 @@ export default function LoginPage() {
           <button type="submit" className="b" disabled={busy}>Conectează-te</button>
 
           <div className="mu">
-            Prin conectare accepți Termenii de utilizare și Politica de confidențialitate.
+            Prin conectare accepți <Link to="/termeni" className="al">Termenii de utilizare</Link> și{' '}
+            <Link to="/confidentialitate" className="al">Politica de confidențialitate</Link>.
           </div>
           <div style={{ textAlign: 'center' }}>
             Nu ai cont încă?{' '}

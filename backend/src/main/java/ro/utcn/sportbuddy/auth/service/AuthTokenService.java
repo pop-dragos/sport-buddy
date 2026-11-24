@@ -61,6 +61,12 @@ public class AuthTokenService {
                 });
     }
 
+    // Toate linkurile de acest tip ale utilizatorului nu mai merg (de exemplu, schimbarea de email anulată).
+    @Transactional
+    public void invalidate(Long userId, AuthTokenType type) {
+        repository.invalidateAll(userId, type, clock.instant());
+    }
+
     // Limită ca să nu se poată trimite zeci de emailuri către cineva.
     public boolean sentRecently(Long userId, AuthTokenType type, Duration window) {
         Instant limit = clock.instant().minus(window);

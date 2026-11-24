@@ -49,6 +49,9 @@ public class User {
     @Column(unique = true)
     private String googleSubject;
 
+    // Emailul nou cerut din Setări, până când e confirmat din linkul trimis la el. Până atunci rămâne cel vechi.
+    private String pendingEmail;
+
     // Crește la resetarea sau schimbarea parolei: token-urile vechi (de pe alte dispozitive) nu mai sunt acceptate.
     @Column(nullable = false, columnDefinition = "integer default 0")
     private int tokenVersion;
@@ -159,6 +162,14 @@ public class User {
 
     public void setGoogleSubject(String googleSubject) {
         this.googleSubject = googleSubject;
+    }
+
+    public String getPendingEmail() {
+        return pendingEmail;
+    }
+
+    public void setPendingEmail(String pendingEmail) {
+        this.pendingEmail = pendingEmail;
     }
 
     public int getTokenVersion() {

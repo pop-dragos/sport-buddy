@@ -11,6 +11,8 @@ import LoginPage from './features/auth/LoginPage'
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage'
 import ResetPasswordPage from './features/auth/ResetPasswordPage'
 import VerifyEmailPage from './features/auth/VerifyEmailPage'
+import ConfirmEmailChangePage from './features/auth/ConfirmEmailChangePage'
+import LegalPage from './features/legal/LegalPage'
 import RequireAuth from './features/auth/RequireAuth'
 
 // Pagina de prezentare se încarcă separat, ca biblioteca de animații să nu ajungă în restul aplicației.
@@ -24,6 +26,9 @@ export default function App() {
       {/* deschise din linkurile trimise pe email */}
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/confirm-email" element={<ConfirmEmailChangePage />} />
+      <Route path="/termeni" element={<LegalPage page="terms" />} />
+      <Route path="/confidentialitate" element={<LegalPage page="privacy" />} />
       <Route path="/bun-venit" element={<Suspense fallback={null}><LandingPage /></Suspense>} />
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>

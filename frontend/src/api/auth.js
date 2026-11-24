@@ -24,6 +24,9 @@ export const forgotPassword = (identifier) => post('/auth/forgot-password', { id
 
 export const resetPassword = (token, newPassword) => post('/auth/reset-password', { token, newPassword })
 
+// din linkul trimis la emailul nou (schimbare cerută din Setări)
+export const confirmEmailChange = (token) => post('/auth/confirm-email', { token })
+
 // Poza aleasă la cont nou, înainte de confirmarea emailului (fără sesiune, cu setupToken).
 export function uploadSignupAvatar(file, setupToken) {
   const body = new FormData()

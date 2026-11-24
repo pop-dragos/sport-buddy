@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getCities, getSports } from '../../api/catalog'
 import { errorMessage } from '../../api/http'
 import { uploadSignupAvatar } from '../../api/auth'
@@ -193,6 +194,10 @@ export default function SignupForm({ social, onVerificationSent }) {
       </div>
 
       {error && <div className="err">{error}</div>}
+      <div className="mu">
+        Creând contul, accepți <Link to="/termeni" className="al">Termenii de utilizare</Link> și{' '}
+        <Link to="/confidentialitate" className="al">Politica de confidențialitate</Link>.
+      </div>
       <button type="button" className="b" disabled={busy} onClick={submit}>Creează contul</button>
     </>
   )

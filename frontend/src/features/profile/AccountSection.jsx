@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { forgotPassword } from '../../api/auth'
 import { errorMessage } from '../../api/http'
-import { updateMe, updateSports } from '../../api/users'
+import { cancelEmailChange, resendEmailChange, updateMe, updateSports } from '../../api/users'
 import { useAuth } from '../auth/useAuth'
+import { useCooldown } from '../auth/useCooldown'
 import AvatarField from './AvatarField'
+import ChangeEmailModal from './ChangeEmailModal'
 import ChangePasswordModal from './ChangePasswordModal'
 import DeleteAccountModal from './DeleteAccountModal'
 import { LEVELS } from './levels'
@@ -15,7 +17,6 @@ export default function AccountSection({ sports, cities }) {
   const { user, updateUser } = useAuth()
 
   const [fullName, setFullName] = useState(user.fullName)
-  const [email, setEmail] = useState(user.email)
   const [phone, setPhone] = useState(user.phone ?? '')
   const [age, setAge] = useState(String(user.age ?? ''))
   const [cityId, setCityId] = useState(user.cityId ? String(user.cityId) : '')
@@ -27,6 +28,9 @@ export default function AccountSection({ sports, cities }) {
   const [modal, setModal] = useState(null)
   // mesajul de lângă butonul de parolă (schimbată / link de setare trimis)
   const [passwordNote, setPasswordNote] = useState('')
+  // mesajul de sub email (link retrimis / eroare)
+  const [emailNote, setEmailNote] = useState('')
+  const [resendLeft, restartResend] = useCooldown(60)
 
   // Contul Google fără parolă: parola se setează din linkul trimis pe email, ca la resetare.
   async function sendSetPasswordLink() {
@@ -39,17 +43,38 @@ export default function AccountSection({ sports, cities }) {
     }
   }
 
+  async function resendEmail() {
+    setEmailNote('')
+    try {
+      await resendEmailChange()
+      setEmailNote('Am retrimis linkul de confirmare.')
+      restartResend()
+    } catch (e) {
+      setEmailNote(errorMessage(e))
+    }
+  }
+
+  async function cancelEmail() {
+    setEmailNote('')
+    try {
+      updateUser(await cancelEmailChange())
+    } catch (e) {
+      setEmailNote(errorMessage(e))
+    }
+  }
+
   async function save() {
     const years = Number(age)
-    if (!fullName.trim() || !email.trim() || !age || years < MIN_AGE || years > MAX_AGE) {
-      setMessage({ text: `Numele, emailul și vârsta (${MIN_AGE}–${MAX_AGE}) sunt obligatorii.`, error: true })
+    if (!fullName.trim() || !age || years < MIN_AGE || years > MAX_AGE) {
+      setMessage({ text: `Numele și vârsta (${MIN_AGE}–${MAX_AGE}) sunt obligatorii.`, error: true })
       return
     }
     setBusy(true)
     setMessage({ text: '', error: false })
     try {
+      // emailul nu se trimite de aici: se schimbă separat, cu confirmare
       updateUser(await updateMe({
-        fullName, email, phone, age: years, description,
+        fullName, phone, age: years, description,
         ...(cityId && { cityId: Number(cityId) })
       }))
       setMessage({ text: 'Modificările au fost salvate.', error: false })
@@ -80,7 +105,23 @@ export default function AccountSection({ sports, cities }) {
         </div>
         <div className="f">
           <label>Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <div className="r" style={{ flexWrap: 'nowrap' }}>
+            <input type="email" value={user.email} readOnly aria-label="Email" />
+            <button type="button" className="b o" onClick={() => setModal('email')}>Schimbă</button>
+          </div>
+          {user.pendingEmail && (
+            <div className="note" role="status">
+              Așteaptă confirmarea la <b className="ce-mail">{user.pendingEmail}</b>. Deschide linkul trimis acolo;
+              până atunci, contul rămâne pe adresa de mai sus.
+              <div className="r" style={{ marginTop: 8 }}>
+                <button type="button" className="b o" disabled={resendLeft > 0} onClick={resendEmail}>
+                  {resendLeft > 0 ? `Retrimite (${resendLeft} s)` : 'Retrimite linkul'}
+                </button>
+                <button type="button" className="b o" onClick={cancelEmail}>Anulează schimbarea</button>
+              </div>
+            </div>
+          )}
+          {emailNote && <span className="mu">{emailNote}</span>}
         </div>
         <div className="f">
           <label>Telefon</label>
@@ -156,6 +197,13 @@ export default function AccountSection({ sports, cities }) {
         <ChangePasswordModal
           onClose={() => setModal(null)}
           onDone={() => { setModal(null); setPasswordNote('Parola a fost schimbată. Celelalte dispozitive au fost deconectate.') }}
+        />
+      )}
+      {modal === 'email' && (
+        <ChangeEmailModal
+          hasPassword={user.hasPassword !== false}
+          onClose={() => setModal(null)}
+          onDone={(me) => { updateUser(me); setModal(null); setEmailNote(''); restartResend() }}
         />
       )}
       {modal === 'delete' && <DeleteAccountModal onClose={() => setModal(null)} />}

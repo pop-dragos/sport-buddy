@@ -141,6 +141,35 @@ public class UserService {
         u.bumpTokenVersion();
     }
 
+    // ---------- schimbarea emailului (cu confirmare) ----------
+
+    @Transactional
+    public void setPendingEmail(Long id, String email) {
+        getEntity(id).setPendingEmail(email);
+    }
+
+    // Din linkul de confirmare: emailul cerut devine emailul contului. Întoarce noul email.
+    @Transactional
+    public String applyPendingEmail(Long id) {
+        User u = getEntity(id);
+        String email = u.getPendingEmail();
+        if (email == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_LINK",
+                    "Nu există nicio schimbare de email în așteptare.");
+        }
+        userRepository.findByEmailIgnoreCase(email)
+                .filter(other -> !other.getId().equals(id))
+                .ifPresent(other -> { throw emailTaken(); });
+        u.setEmail(email);
+        u.setPendingEmail(null);
+        u.setEmailVerified(true);
+        return email;
+    }
+
+    private static ApiException emailTaken() {
+        return new ApiException(HttpStatus.CONFLICT, "EMAIL_TAKEN", "Există deja un cont cu acest email.");
+    }
+
     private static AuthAccount toAccount(User u) {
         return new AuthAccount(u.getId(), u.getFullName(), u.getEmail(), u.getPasswordHash(),
                 u.isEmailVerified(), u.getGoogleSubject(), u.getTokenVersion());
@@ -195,16 +224,10 @@ public class UserService {
             if (req.fullName().isBlank()) throw invalid("fullName", "Numele nu poate fi gol.");
             u.setFullName(req.fullName().trim());
         }
-        if (req.email() != null) {
-            String email = req.email().trim();
-            if (email.isEmpty()) throw invalid("email", "Emailul nu poate fi gol.");
-            userRepository.findByEmailIgnoreCase(email)
-                    .filter(other -> !other.getId().equals(id))
-                    .ifPresent(other -> {
-                        throw new ApiException(HttpStatus.CONFLICT, "EMAIL_TAKEN",
-                                "Există deja un cont cu acest email.");
-                    });
-            u.setEmail(email);
+        // Emailul nu se schimbă de aici: adresa nouă trebuie confirmată (vezi requestEmailChange din auth).
+        // Același email trimis din nou (formularul trimite tot) e ignorat.
+        if (req.email() != null && !req.email().trim().equalsIgnoreCase(u.getEmail())) {
+            throw invalid("email", "Emailul se schimbă din butonul „Schimbă emailul”, cu confirmare.");
         }
         if (req.phone() != null) u.setPhone(blankToNull(req.phone()));
         if (req.age() != null) u.setAge(req.age());
@@ -258,6 +281,7 @@ public class UserService {
         u.setFullName("Utilizator șters");
         u.setEmail("sters-" + id + "@sters.invalid");
         u.setGoogleSubject(null);
+        u.setPendingEmail(null);
         u.bumpTokenVersion();
         u.setPasswordHash(null);
         u.setPhone(null);
@@ -474,7 +498,7 @@ public class UserService {
         return new UserMe(u.getId(), u.getUsername(), u.getFullName(), u.getEmail(), u.getPhone(),
                 u.getAge(), avatarUrl(u), u.getCityId(), u.getBio(),
                 LocalDateTime.ofInstant(u.getCreatedAt(), ZONE), sports, completion(u, sports),
-                u.getPasswordHash() != null);
+                u.getPasswordHash() != null, u.getPendingEmail());
     }
 
     private static String avatarUrl(User u) {

@@ -1,0 +1,64 @@
+/* Termeni și Confidențialitate: același fundal ca la conectare, dar un card mai lat, pentru citit. */
+
+.legal {
+  max-width: 720px;
+  gap: 0;
+  line-height: 1.6;
+}
+
+.legal-back {
+  align-self: flex-start;
+  margin-bottom: 12px;
+}
+
+.legal h1 {
+  font-size: 26px;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.legal-head {
+  margin-bottom: 16px;
+}
+
+.legal h2 {
+  font-size: 16px;
+  margin: 24px 0 6px;
+}
+
+.legal p {
+  margin: 0 0 10px;
+}
+
+.legal ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+
+.legal li + li {
+  margin-top: 4px;
+}
+
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bd);
+}
+
+.legal-links a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .legal {
+    padding: 20px 16px;
+  }
+
+  .legal h1 {
+    font-size: 22px;
+  }
+}

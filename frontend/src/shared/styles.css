@@ -345,7 +345,8 @@ header h2 {
   align-items: center;
 }
 
-.r > input {
+/* doar câmpurile de text se întind; căsuțele de bifat rămân lângă eticheta lor */
+.r > input:not([type="checkbox"]):not([type="radio"]) {
   flex: 1 1 0;
   width: auto;
 }
@@ -576,6 +577,12 @@ main,
   border: 1px solid var(--bd);
   border-radius: 8px;
   padding: 9px;
+}
+
+.soc .sim {
+  color: var(--mu);
+  font-size: 12px;
+  margin-left: -4px;
 }
 
 .soc:disabled {
