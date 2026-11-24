@@ -1,12 +1,14 @@
 import { motion } from 'motion/react'
 import SportIcon from '../../shared/SportIcon'
+import { useT } from '../../shared/i18n/useI18n'
 import { HIGHLIGHTS, SPORTS } from './demoData'
 
 function Tile({ item, index, animate }) {
+  const t = useT()
   const content = (
     <>
-      <p className="tile-big" style={{ color: item.accent }}>{item.big}</p>
-      <p className="tile-text">{item.text}</p>
+      <p className="tile-big" style={{ color: item.accent }}>{t(item.big)}</p>
+      <p className="tile-text">{t(item.text)}</p>
       {item.id === 'sports' && (
         <div className="tile-icons" aria-hidden="true">
           {SPORTS.map((s) => <SportIcon key={s.code} type={s.code} />)}
@@ -32,9 +34,10 @@ function Tile({ item, index, animate }) {
 
 // „Pe scurt": cardurile cu ce face aplicația, ca grila de pe paginile de produs Apple.
 export default function Highlights({ animate }) {
+  const t = useT()
   return (
     <section className="highlights" id="pe-scurt" aria-labelledby="pe-scurt-titlu">
-      <h2 id="pe-scurt-titlu" className="section-title">Pe scurt.</h2>
+      <h2 id="pe-scurt-titlu" className="section-title">{t('Pe scurt.')}</h2>
       <div className="tiles">
         {HIGHLIGHTS.map((h, i) => <Tile key={h.id} item={h} index={i} animate={animate} />)}
       </div>

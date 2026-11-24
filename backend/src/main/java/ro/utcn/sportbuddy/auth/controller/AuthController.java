@@ -9,6 +9,9 @@ import org.springframework.web.multipart.MultipartFile;
 import ro.utcn.sportbuddy.auth.service.AuthService;
 import ro.utcn.sportbuddy.auth.service.EmailChangeService;
 
+import ro.utcn.sportbuddy.common.i18n.Messages;
+import ro.utcn.sportbuddy.common.i18n.RequestLanguage;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -68,7 +71,7 @@ public class AuthController {
     @PostMapping("/confirm-email")
     public Map<String, String> confirmEmail(@Valid @RequestBody TokenRequest req) {
         String email = emailChangeService.confirm(req);
-        return Map.of("message", "Emailul contului este acum " + email + ".", "email", email);
+        return Map.of("message", text("Emailul contului este acum " + email + "."), "email", email);
     }
 
     // Răspunsul e același dacă există sau nu contul.
@@ -76,7 +79,7 @@ public class AuthController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, String> resendVerification(@Valid @RequestBody ForgotPasswordRequest req) {
         authService.resendVerification(req);
-        return Map.of("message", "Dacă există un cont neconfirmat, vei primi un email cu linkul de confirmare.");
+        return Map.of("message", text("Dacă există un cont neconfirmat, vei primi un email cu linkul de confirmare."));
     }
 
     // Răspunsul e același dacă există sau nu contul.
@@ -84,12 +87,17 @@ public class AuthController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
         authService.forgotPassword(req);
-        return Map.of("message", "Dacă există un cont, vei primi un email cu linkul de resetare.");
+        return Map.of("message", text("Dacă există un cont, vei primi un email cu linkul de resetare."));
     }
 
     @PostMapping("/reset-password")
     public Map<String, String> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
         authService.resetPassword(req);
-        return Map.of("message", "Parola a fost schimbată. Te poți conecta cu parola nouă.");
+        return Map.of("message", text("Parola a fost schimbată. Te poți conecta cu parola nouă."));
+    }
+
+    // mesajul în limba cererii
+    private static String text(String ro) {
+        return Messages.translate(ro, RequestLanguage.current());
     }
 }

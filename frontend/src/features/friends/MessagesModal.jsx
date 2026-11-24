@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { getMessages, sendMessage } from '../../api/friends'
 import { errorMessage } from '../../api/http'
 import Modal from '../../shared/Modal'
+import { useT } from '../../shared/i18n/useI18n'
 import { useAuth } from '../auth/useAuth'
 import './friends.css'
 
@@ -11,6 +12,7 @@ const POLL_MS = 3000
 // doar de mesajele cu id mai mare decât ultimul primit.
 export default function MessagesModal({ friend, onClose }) {
   const { user } = useAuth()
+  const t = useT()
   const [messages, setMessages] = useState(null)
   const [draft, setDraft] = useState('')
   const [error, setError] = useState('')
@@ -70,8 +72,8 @@ export default function MessagesModal({ friend, onClose }) {
   return (
     <Modal title={friend.username} onClose={onClose}>
       <div className="chat direct-message-chat" ref={box}>
-        {messages === null && !error && <div className="mu">Se încarcă...</div>}
-        {messages?.length === 0 && <div className="mu">Nu ai scris încă nimic.</div>}
+        {messages === null && !error && <div className="mu">{t('Se încarcă...')}</div>}
+        {messages?.length === 0 && <div className="mu">{t('Nu ai scris încă nimic.')}</div>}
         {messages?.map((m) => (
           <div className="m" key={m.id}>
             <b>{m.senderId === user.id ? user.username : friend.username}:</b> {m.message}
@@ -79,12 +81,12 @@ export default function MessagesModal({ friend, onClose }) {
         ))}
       </div>
       <form className="r direct-message-form" onSubmit={send}>
-        <input ref={input} placeholder="Mesaj" maxLength={1000} value={draft} onChange={(e) => setDraft(e.target.value)} />
-        <button type="submit" className="b">Trimite</button>
+        <input ref={input} placeholder={t('Mesaj')} maxLength={1000} value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <button type="submit" className="b">{t('Trimite')}</button>
       </form>
       {error && <div className="err" style={{ marginTop: 8 }}>{error}</div>}
       <div style={{ marginTop: 12 }}>
-        <button type="button" className="b o" onClick={onClose}>Închide</button>
+        <button type="button" className="b o" onClick={onClose}>{t('Închide')}</button>
       </div>
     </Modal>
   )

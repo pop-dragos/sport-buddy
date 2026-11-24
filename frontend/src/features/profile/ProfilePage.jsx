@@ -6,6 +6,8 @@ import { getUserLobbies, getUserStats } from '../../api/lobbies'
 import { getUserRating } from '../../api/ratings'
 import { getProfile } from '../../api/users'
 import Avatar from '../../shared/Avatar'
+import { currentLocale, trField } from '../../shared/i18n'
+import { useI18n } from '../../shared/i18n/useI18n'
 import { useAuth } from '../auth/useAuth'
 import FriendButton from '../friends/FriendButton'
 import FriendRow from '../friends/FriendRow'
@@ -17,11 +19,12 @@ import { useCatalog } from './useCatalog'
 const RECENT_MATCHES = 3
 
 function memberSince(date) {
-  return new Date(date).toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })
+  return new Date(date).toLocaleDateString(currentLocale(), { month: 'long', year: 'numeric' })
 }
 
 function ProfileView({ id }) {
   const { user: me } = useAuth()
+  const { t } = useI18n()
   const { sports, cities } = useCatalog()
   const isMe = String(me.id) === id
 
@@ -67,7 +70,7 @@ function ProfileView({ id }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <b style={{ fontSize: 18 }}>{profile.fullName}</b>
               <RatingLine rating={rating} />
-              <div className="mu" style={{ marginTop: 4 }}>Profilul este vizibil doar prietenilor.</div>
+              <div className="mu" style={{ marginTop: 4 }}>{t('Profilul este vizibil doar prietenilor.')}</div>
             </div>
           </div>
           <FriendButton profile={profile} />
@@ -77,9 +80,12 @@ function ProfileView({ id }) {
   }
 
   const cityName = cities.find((c) => c.id === profile.cityId)?.name
-  const sportName = (sportId) => sports.find((s) => s.id === sportId)?.name ?? `Sport ${sportId}`
+  const sportName = (sportId) => {
+    const sport = sports.find((s) => s.id === sportId)
+    return sport ? t(sport.name) : t('Sport {n}', { n: sportId })
+  }
   const tags = rating?.tags ?? []
-  const sportNames = Object.fromEntries(sports.map((s) => [s.code, s.name]))
+  const sportNames = Object.fromEntries(sports.map((s) => [s.code, t(s.name)]))
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
@@ -89,19 +95,19 @@ function ProfileView({ id }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <b style={{ fontSize: 18 }}>{profile.fullName}</b>
             <div className="mu">
-              {cityName ? `${cityName} · ` : ''}membru din {memberSince(profile.memberSince)}
+              {cityName ? `${cityName} · ` : ''}{t('membru din {date}', { date: memberSince(profile.memberSince) })}
             </div>
             <RatingLine rating={rating} />
           </div>
         </div>
 
         <p style={{ margin: '12px 0 0' }}>
-          {profile.description || (isMe ? <span className="mu">Nu ai adăugat o descriere.</span> : null)}
+          {profile.description || (isMe ? <span className="mu">{t('Nu ai adăugat o descriere.')}</span> : null)}
         </p>
 
         {isMe ? (
           <div className="r" style={{ marginTop: 12 }}>
-            <Link to="/settings" className="b o" style={{ textDecoration: 'none' }}>Editează profilul</Link>
+            <Link to="/settings" className="b o" style={{ textDecoration: 'none' }}>{t('Editează profilul')}</Link>
           </div>
         ) : (
           <FriendButton profile={profile} />
@@ -110,9 +116,9 @@ function ProfileView({ id }) {
 
       <div className="g" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         {[
-          [stats?.matchesPlayed ?? '–', 'Meciuri'],
-          [rating?.average != null ? rating.average.toFixed(1) : '–', 'Rating'],
-          isMe ? [friendCount ?? '–', 'Prieteni'] : [stats?.matchesTogether ?? '–', 'Meciuri împreună']
+          [stats?.matchesPlayed ?? '–', t('Meciuri')],
+          [rating?.average != null ? rating.average.toFixed(1) : '–', t('Rating')],
+          isMe ? [friendCount ?? '–', t('Prieteni')] : [stats?.matchesTogether ?? '–', t('Meciuri împreună')]
         ].map(([value, label]) => (
           <div className="card" key={label} style={{ textAlign: 'center' }}>
             <b style={{ fontSize: 20 }}>{value}</b>
@@ -122,9 +128,9 @@ function ProfileView({ id }) {
       </div>
 
       <div className="card">
-        <b>Sporturi</b>
+        <b>{t('Sporturi')}</b>
         {profile.sports.length === 0 && (
-          <div className="mu">Niciun sport adăugat. Le poți alege din setări.</div>
+          <div className="mu">{t('Niciun sport adăugat. Le poți alege din setări.')}</div>
         )}
         {profile.sports.map((s) => (
           <div className="pl profile-sport-row" key={s.sportId}>
@@ -135,37 +141,37 @@ function ProfileView({ id }) {
       </div>
 
       <div className="card">
-        <b>Etichete de la colegi</b>
+        <b>{t('Etichete de la colegi')}</b>
         {tags.length === 0 ? (
-          <div className="mu" style={{ marginTop: 8 }}>Apar după primele review-uri.</div>
+          <div className="mu" style={{ marginTop: 8 }}>{t('Apar după primele review-uri.')}</div>
         ) : (
           <div className="r" style={{ marginTop: 8, flexWrap: 'wrap' }}>
-            {tags.map((t) => <span className="tag" key={t}>{t}</span>)}
+            {tags.map((tag) => <span className="tag" key={tag}>{t(tag)}</span>)}
           </div>
         )}
       </div>
 
       {theirFriends && (
         <div className="card">
-          <b>Prieteni ({theirFriends.length})</b>
-          {theirFriends.length === 0 && <div className="mu" style={{ marginTop: 6 }}>Nu are încă prieteni.</div>}
+          <b>{t('Prieteni')} ({theirFriends.length})</b>
+          {theirFriends.length === 0 && <div className="mu" style={{ marginTop: 6 }}>{t('Nu are încă prieteni.')}</div>}
           {theirFriends.map((f) => <FriendRow key={f.userId} friend={f} sportNames={sportNames} />)}
         </div>
       )}
 
-      <b style={{ display: 'block', margin: '4px 0 8px' }}>{isMe ? 'Meciurile mele' : 'Meciuri împreună'}</b>
+      <b style={{ display: 'block', margin: '4px 0 8px' }}>{isMe ? t('Meciurile mele') : t('Meciuri împreună')}</b>
       {(matches ?? []).map((l) => (
         <div className="card" key={l.id}>
           <div className="top">
             <div>
-              <b>{l.sportName} · {l.fieldName}</b>
+              <b>{t(l.sportName)} · {trField(l.fieldName)}</b>
               <div className="mu">{formatDay(l.dateTime)} · {formatTime(l.dateTime)} · {l.cityName}</div>
             </div>
-            <Link to={`/lobbies/${l.id}`} className="b o" style={{ textDecoration: 'none' }}>Deschide</Link>
+            <Link to={`/lobbies/${l.id}`} className="b o" style={{ textDecoration: 'none' }}>{t('Deschide')}</Link>
           </div>
         </div>
       ))}
-      {(matches ?? []).length === 0 && <div className="card mu">Nimic de arătat.</div>}
+      {(matches ?? []).length === 0 && <div className="card mu">{t('Nimic de arătat.')}</div>}
     </div>
   )
 }

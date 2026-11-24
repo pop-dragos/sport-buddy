@@ -9,6 +9,8 @@ import ro.utcn.sportbuddy.auth.dto.ChangeEmailRequest;
 import ro.utcn.sportbuddy.auth.dto.TokenRequest;
 import ro.utcn.sportbuddy.auth.model.AuthTokenType;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.i18n.RequestLanguage;
+import ro.utcn.sportbuddy.common.mail.EmailTexts;
 import ro.utcn.sportbuddy.common.mail.MailService;
 import ro.utcn.sportbuddy.users.dto.AuthAccount;
 import ro.utcn.sportbuddy.users.dto.UserMe;
@@ -65,11 +67,9 @@ public class EmailChangeService {
         userService.setPendingEmail(userId, email);
         sendConfirmation(userId, email, account.fullName());
         if (!sameAsPending) {
-            mail.sendNotice(account.email(), "Emailul contului SportBuddy se schimbă",
-                    "Salut, " + account.fullName() + "!",
-                    "Cineva a cerut schimbarea emailului contului tău SportBuddy în " + email + ". "
-                            + "Schimbarea se face abia după confirmarea din linkul trimis la adresa nouă.",
-                    "Dacă nu ai fost tu, intră în cont, anulează schimbarea din Setări și schimbă-ți parola.");
+            EmailTexts.Text warning = EmailTexts.emailChangeWarning(RequestLanguage.current(),
+                    account.fullName(), email);
+            mail.sendNotice(account.email(), warning.subject(), warning.greeting(), warning.body(), warning.footer());
         }
         return userService.getMe(userId);
     }
@@ -107,11 +107,9 @@ public class EmailChangeService {
 
     private void sendConfirmation(Long userId, String email, String fullName) {
         String token = tokens.create(userId, AuthTokenType.CHANGE_EMAIL, LINK_VALIDITY);
-        mail.sendLink(email, "Confirmă noul email SportBuddy", "Salut, " + fullName + "!",
-                "Ai cerut ca acesta să fie noul email al contului tău SportBuddy. "
-                        + "Confirmă-l din linkul de mai jos, valabil 24 de ore.",
-                "Confirmă emailul nou", frontendUrl + "/confirm-email?token=" + token,
-                "Dacă nu ai cerut tu schimbarea, ignoră acest email: contul rămâne pe adresa veche.");
+        EmailTexts.Text text = EmailTexts.confirmNewEmail(RequestLanguage.current(), fullName);
+        mail.sendLink(email, text.subject(), text.greeting(), text.body(), text.button(),
+                frontendUrl + "/confirm-email?token=" + token, text.footer());
     }
 
     private AuthAccount account(Long userId) {

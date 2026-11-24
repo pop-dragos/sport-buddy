@@ -1,21 +1,23 @@
+import { tr } from '../../shared/i18n'
+
 // Aceleași reguli ca în backend (PasswordPolicy): minimum 8 caractere, cel puțin o literă și o cifră.
 export const MIN_PASSWORD = 8
 export const MAX_PASSWORD = 72
 
 export function passwordChecks(pw) {
   return [
-    { ok: pw.length >= MIN_PASSWORD, label: `Minimum ${MIN_PASSWORD} caractere` },
-    { ok: /\p{L}/u.test(pw), label: 'O literă' },
-    { ok: /\d/.test(pw), label: 'O cifră' }
+    { ok: pw.length >= MIN_PASSWORD, label: tr('Minimum {n} caractere', { n: MIN_PASSWORD }) },
+    { ok: /\p{L}/u.test(pw), label: tr('O literă') },
+    { ok: /\d/.test(pw), label: tr('O cifră') }
   ]
 }
 
 // Mesajul pentru primul criteriu neîndeplinit, sau '' dacă parola e acceptată.
 export function passwordProblem(pw) {
-  if (pw.length < MIN_PASSWORD) return `Parola trebuie să aibă minimum ${MIN_PASSWORD} caractere.`
-  if (pw.length > MAX_PASSWORD) return `Parola poate avea maximum ${MAX_PASSWORD} de caractere.`
-  if (!/\p{L}/u.test(pw)) return 'Parola trebuie să conțină cel puțin o literă.'
-  if (!/\d/.test(pw)) return 'Parola trebuie să conțină cel puțin o cifră.'
+  if (pw.length < MIN_PASSWORD) return tr('Parola trebuie să aibă minimum {n} caractere.', { n: MIN_PASSWORD })
+  if (pw.length > MAX_PASSWORD) return tr('Parola poate avea maximum {n} de caractere.', { n: MAX_PASSWORD })
+  if (!/\p{L}/u.test(pw)) return tr('Parola trebuie să conțină cel puțin o literă.')
+  if (!/\d/.test(pw)) return tr('Parola trebuie să conțină cel puțin o cifră.')
   return ''
 }
 
@@ -39,4 +41,6 @@ export function passwordStrength(pw) {
   return Math.min(score, 4)
 }
 
-export const STRENGTH_LABELS = ['', 'Slabă', 'Acceptabilă', 'Bună', 'Puternică']
+export function strengthLabel(score) {
+  return [null, tr('Slabă'), tr('Acceptabilă'), tr('Bună'), tr('Puternică')][score] ?? ''
+}

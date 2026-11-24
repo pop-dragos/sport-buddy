@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import Avatar from '../../shared/Avatar'
 import SportIcon from '../../shared/SportIcon'
+import { useT } from '../../shared/i18n/useI18n'
 import { CITY, ME, SPORTS } from './demoData'
 
 // Aceleași iconițe ca în bara laterală a aplicației (layout/Sidebar.jsx)
@@ -42,6 +43,7 @@ function NavIcon({ name }) {
 // Se schimbă doar zona principală (children) și, peste ea, o fereastră modală (overlay), ca în aplicație.
 // fluid: pe mobil și cu reduced-motion fereastra are înălțimea conținutului, iar modalul apare în pagină.
 export default function AppWindow({ pageTitle, homeActive, pressFootball, overlay, fluid, still, children }) {
+  const t = useT()
   return (
     <div className={`demo-window${fluid ? ' fluid' : ''}`}>
       <div className="demo-titlebar">
@@ -55,17 +57,17 @@ export default function AppWindow({ pageTitle, homeActive, pressFootball, overla
             <b>S</b><span>portBuddy</span>
           </div>
           <div className="demo-sbl">
-            <span className={`si ${homeActive ? 'active' : ''}`}><NavIcon name="home" /><span>Acasă</span></span>
-            <span className="si"><NavIcon name="agenda" /><span>Agenda mea</span></span>
-            <span className="si"><NavIcon name="friends" /><span>Prieteni</span></span>
-            <div className="mu" style={{ padding: '10px 10px 4px' }}>SPORTURI</div>
+            <span className={`si ${homeActive ? 'active' : ''}`}><NavIcon name="home" /><span>{t('Acasă')}</span></span>
+            <span className="si"><NavIcon name="agenda" /><span>{t('Agenda mea')}</span></span>
+            <span className="si"><NavIcon name="friends" /><span>{t('Prieteni')}</span></span>
+            <div className="mu" style={{ padding: '10px 10px 4px' }}>{t('SPORTURI')}</div>
             {SPORTS.map((s) => (
               <span key={s.code} className="si demo-sport">
                 {s.code === 'football' && pressFootball && (
                   <motion.i className="demo-press" style={{ opacity: pressFootball }} />
                 )}
                 <SportIcon type={s.code} />
-                <span>{s.name}</span>
+                <span>{t(s.name)}</span>
               </span>
             ))}
           </div>

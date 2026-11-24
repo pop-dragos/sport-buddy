@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { confirmEmailChange, getMe } from '../../api/auth'
 import { errorMessage } from '../../api/http'
+import { useT } from '../../shared/i18n/useI18n'
 import { useAuth } from './useAuth'
 import AuthCard from './AuthCard'
 
@@ -11,8 +12,9 @@ export default function ConfirmEmailChangePage() {
   const [params] = useSearchParams()
   const token = params.get('token')
   const { status, updateUser } = useAuth()
+  const t = useT()
   const [result, setResult] = useState(null)
-  const [error, setError] = useState(token ? '' : 'Linkul de confirmare nu este complet.')
+  const [error, setError] = useState(token ? '' : t('Linkul de confirmare nu este complet.'))
   // linkul merge o singură dată: nu îl trimitem de două ori (React rulează efectele de două ori în dezvoltare)
   const sent = useRef(false)
 
@@ -30,14 +32,14 @@ export default function ConfirmEmailChangePage() {
   }, [result, status, updateUser])
 
   const next = status === 'authed'
-    ? <Link to="/settings" className="b" style={{ textAlign: 'center', textDecoration: 'none' }}>Mergi la Setări</Link>
-    : <Link to="/login" className="b" style={{ textAlign: 'center', textDecoration: 'none' }}>Mergi la conectare</Link>
+    ? <Link to="/settings" className="b" style={{ textAlign: 'center', textDecoration: 'none' }}>{t('Mergi la Setări')}</Link>
+    : <Link to="/login" className="b" style={{ textAlign: 'center', textDecoration: 'none' }}>{t('Mergi la conectare')}</Link>
 
   if (result) {
     return (
-      <AuthCard title="Email schimbat">
+      <AuthCard title={t('Email schimbat')}>
         <p className="mu" style={{ margin: 0, textAlign: 'center' }}>
-          {result.message} De acum te conectezi și primești emailurile pe această adresă.
+          {result.message} {t('De acum te conectezi și primești emailurile pe această adresă.')}
         </p>
         {next}
       </AuthCard>
@@ -46,14 +48,14 @@ export default function ConfirmEmailChangePage() {
 
   if (!error) {
     return (
-      <AuthCard title="Confirmăm emailul nou...">
-        <div className="mu" style={{ textAlign: 'center' }}>O secundă.</div>
+      <AuthCard title={t('Confirmăm emailul nou...')}>
+        <div className="mu" style={{ textAlign: 'center' }}>{t('O secundă.')}</div>
       </AuthCard>
     )
   }
 
   return (
-    <AuthCard title="Confirmarea nu a reușit">
+    <AuthCard title={t('Confirmarea nu a reușit')}>
       <p className="mu" style={{ margin: 0, textAlign: 'center' }}>{error}</p>
       {next}
     </AuthCard>

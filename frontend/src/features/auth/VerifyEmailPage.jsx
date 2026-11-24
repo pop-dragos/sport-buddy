@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { errorMessage } from '../../api/http'
+import { useT } from '../../shared/i18n/useI18n'
 import { useAuth } from './useAuth'
 import AuthCard from './AuthCard'
 
@@ -10,7 +11,8 @@ export default function VerifyEmailPage() {
   const token = params.get('token')
   const { verifyEmail } = useAuth()
   const navigate = useNavigate()
-  const [error, setError] = useState(token ? '' : 'Linkul de confirmare nu este complet.')
+  const t = useT()
+  const [error, setError] = useState(token ? '' : t('Linkul de confirmare nu este complet.'))
   // linkul merge o singură dată: nu îl trimitem de două ori (React rulează efectele de două ori în dezvoltare)
   const sent = useRef(false)
 
@@ -24,20 +26,19 @@ export default function VerifyEmailPage() {
 
   if (!error) {
     return (
-      <AuthCard title="Confirmăm contul...">
-        <div className="mu" style={{ textAlign: 'center' }}>O secundă.</div>
+      <AuthCard title={t('Confirmăm contul...')}>
+        <div className="mu" style={{ textAlign: 'center' }}>{t('O secundă.')}</div>
       </AuthCard>
     )
   }
 
   return (
-    <AuthCard title="Confirmarea nu a reușit">
+    <AuthCard title={t('Confirmarea nu a reușit')}>
       <p className="mu" style={{ margin: 0, textAlign: 'center' }}>{error}</p>
       <p className="mu" style={{ margin: 0, textAlign: 'center' }}>
-        Dacă ți-ai confirmat deja contul, te poți conecta. Altfel, conectează-te cu emailul și parola
-        și îți trimitem automat un link nou.
+        {t('Dacă ți-ai confirmat deja contul, te poți conecta. Altfel, conectează-te cu emailul și parola și îți trimitem automat un link nou.')}
       </p>
-      <Link to="/login" className="b" style={{ textAlign: 'center', textDecoration: 'none' }}>Mergi la conectare</Link>
+      <Link to="/login" className="b" style={{ textAlign: 'center', textDecoration: 'none' }}>{t('Mergi la conectare')}</Link>
     </AuthCard>
   )
 }

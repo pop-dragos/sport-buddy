@@ -5,6 +5,7 @@ import { errorMessage } from '../../api/http'
 import { uploadSignupAvatar } from '../../api/auth'
 import { uploadAvatar } from '../../api/users'
 import { AVATAR_TYPES, avatarProblem } from '../profile/avatarRules'
+import { useT } from '../../shared/i18n/useI18n'
 import { useAuth } from './useAuth'
 import NewPasswordFields from './NewPasswordFields'
 import { passwordProblem } from './passwordRules'
@@ -19,6 +20,7 @@ const DEFAULT_LEVEL = 'INTERMEDIATE'
 // onVerificationSent(email): contul cu parolă a fost creat și așteaptă confirmarea emailului.
 export default function SignupForm({ social, onVerificationSent }) {
   const { register, updateUser } = useAuth()
+  const t = useT()
 
   const [fullName, setFullName] = useState(social?.fullName ?? '')
   const [email, setEmail] = useState(social?.email ?? '')
@@ -72,18 +74,18 @@ export default function SignupForm({ social, onVerificationSent }) {
   }
 
   function validate() {
-    if (!fullName.trim()) return 'Numele este obligatoriu.'
-    if (!email.trim()) return 'Emailul este obligatoriu.'
+    if (!fullName.trim()) return t('Numele este obligatoriu.')
+    if (!email.trim()) return t('Emailul este obligatoriu.')
     if (!social) {
       const problem = passwordProblem(password)
       if (problem) return problem
-      if (!confirm) return 'Confirmă parola.'
-      if (confirm !== password) return 'Parolele nu coincid.'
+      if (!confirm) return t('Confirmă parola.')
+      if (confirm !== password) return t('Parolele nu coincid.')
     }
     const years = Number(age)
-    if (!age || years < MIN_AGE) return `Vârsta minimă este ${MIN_AGE}.`
-    if (years > MAX_AGE) return `Vârsta maximă este ${MAX_AGE}.`
-    if (sportIds.length === 0) return 'Alege cel puțin un sport.'
+    if (!age || years < MIN_AGE) return t('Vârsta minimă este {n}.', { n: MIN_AGE })
+    if (years > MAX_AGE) return t('Vârsta maximă este {n}.', { n: MAX_AGE })
+    if (sportIds.length === 0) return t('Alege cel puțin un sport.')
     return ''
   }
 
@@ -123,19 +125,19 @@ export default function SignupForm({ social, onVerificationSent }) {
   return (
     <>
       {social && (
-        <div className="mu">Date preluate din contul tău. Mai completează câmpurile de mai jos.</div>
+        <div className="mu">{t('Date preluate din contul tău. Mai completează câmpurile de mai jos.')}</div>
       )}
 
-      <input placeholder="Nume complet *" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+      <input placeholder={t('Nume complet *')} value={fullName} onChange={(e) => setFullName(e.target.value)} />
       <input
         type="email"
-        placeholder="Email *"
-        aria-label="Email"
+        placeholder={t('Email *')}
+        aria-label={t('Email')}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         autoComplete="email"
         readOnly={Boolean(social?.signupToken)}
-        title={social?.signupToken ? 'Emailul contului Google' : undefined}
+        title={social?.signupToken ? t('Emailul contului Google') : undefined}
       />
       {!social && (
         <NewPasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
@@ -144,16 +146,16 @@ export default function SignupForm({ social, onVerificationSent }) {
         type="number"
         min={MIN_AGE}
         max={MAX_AGE}
-        placeholder={`Vârsta * (minim ${MIN_AGE} ani)`}
+        placeholder={t('Vârsta * (minim {n} ani)', { n: MIN_AGE })}
         value={age}
         onChange={(e) => setAge(e.target.value)}
       />
 
       <div>
-        <b>Sporturi preferate *</b>
+        <b>{t('Sporturi preferate *')}</b>
         <div className="r" style={{ flexWrap: 'wrap', marginTop: 6 }}>
-          {sports === null && <span className="mu">Se încarcă...</span>}
-          {sports?.length === 0 && <span className="mu">Sporturile nu sunt disponibile acum.</span>}
+          {sports === null && <span className="mu">{t('Se încarcă...')}</span>}
+          {sports?.length === 0 && <span className="mu">{t('Sporturile nu sunt disponibile acum.')}</span>}
           {sports?.map((s) => (
             <button
               key={s.id}
@@ -161,19 +163,19 @@ export default function SignupForm({ social, onVerificationSent }) {
               className={`chip ${sportIds.includes(s.id) ? 'on' : ''}`}
               onClick={() => toggleSport(s.id)}
             >
-              {s.name}
+              {t(s.name)}
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <b>Opțional</b>
-        <div className="mu">Le poți completa mai târziu, din setări.</div>
+        <b>{t('Opțional')}</b>
+        <div className="mu">{t('Le poți completa mai târziu, din setări.')}</div>
       </div>
-      <input type="tel" placeholder="Număr de telefon" value={phone} onChange={(e) => setPhone(e.target.value)} />
-      <select value={cityId} onChange={(e) => setCityId(e.target.value)} aria-label="Oraș">
-        <option value="">Oraș</option>
+      <input type="tel" placeholder={t('Număr de telefon')} value={phone} onChange={(e) => setPhone(e.target.value)} />
+      <select value={cityId} onChange={(e) => setCityId(e.target.value)} aria-label={t('Oraș')}>
+        <option value="">{t('Oraș')}</option>
         {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
       </select>
       <div className="r" style={{ flexWrap: 'nowrap' }}>
@@ -183,11 +185,11 @@ export default function SignupForm({ social, onVerificationSent }) {
           <span className="av" style={{ width: 44, height: 44 }}>+</span>
         )}
         <button type="button" className="b o" onClick={() => photoInput.current.click()}>
-          {photo ? 'Schimbă poza' : 'Alege o poză'}
+          {photo ? t('Schimbă poza') : t('Alege o poză')}
         </button>
         {photo && (
           <button type="button" className="b o" onClick={() => { setPhoto(null); setPreview(null) }}>
-            Scoate poza
+            {t('Scoate poza')}
           </button>
         )}
         <input ref={photoInput} type="file" accept={AVATAR_TYPES.join(',')} className="hide" onChange={pickPhoto} />
@@ -195,10 +197,10 @@ export default function SignupForm({ social, onVerificationSent }) {
 
       {error && <div className="err">{error}</div>}
       <div className="mu">
-        Creând contul, accepți <Link to="/termeni" className="al">Termenii de utilizare</Link> și{' '}
-        <Link to="/confidentialitate" className="al">Politica de confidențialitate</Link>.
+        {t('Creând contul, accepți')} <Link to="/termeni" className="al">{t('Termenii de utilizare')}</Link>{' '}
+        {t('și')} <Link to="/confidentialitate" className="al">{t('Politica de confidențialitate')}</Link>.
       </div>
-      <button type="button" className="b" disabled={busy} onClick={submit}>Creează contul</button>
+      <button type="button" className="b" disabled={busy} onClick={submit}>{t('Creează contul')}</button>
     </>
   )
 }

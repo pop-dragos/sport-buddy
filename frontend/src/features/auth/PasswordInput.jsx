@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useT } from '../../shared/i18n/useI18n'
 
 export default function PasswordInput({ value, onChange, placeholder, autoComplete, invalid, label, autoFocus }) {
   const [shown, setShown] = useState(false)
+  const t = useT()
 
   return (
     <div className="pw">
@@ -18,8 +20,8 @@ export default function PasswordInput({ value, onChange, placeholder, autoComple
       <button
         type="button"
         className="eye"
-        title={shown ? 'Ascunde parola' : 'Arată parola'}
-        aria-label={shown ? 'Ascunde parola' : 'Arată parola'}
+        title={shown ? t('Ascunde parola') : t('Arată parola')}
+        aria-label={shown ? t('Ascunde parola') : t('Arată parola')}
         onClick={() => setShown(!shown)}
       >
         <svg className="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

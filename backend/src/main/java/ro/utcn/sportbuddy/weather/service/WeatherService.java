@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import ro.utcn.sportbuddy.catalog.dto.CityDto;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.i18n.Messages;
+import ro.utcn.sportbuddy.common.i18n.RequestLanguage;
 import ro.utcn.sportbuddy.weather.dto.DayForecastDto;
 import ro.utcn.sportbuddy.weather.dto.OpenMeteoResponse;
 import ro.utcn.sportbuddy.weather.dto.WeatherCondition;
@@ -112,13 +114,16 @@ public class WeatherService {
         return WeatherCondition.RAIN; // burniță, ploaie, ninsoare, averse, furtună
     }
 
+    // Textul se scrie în română și se traduce după limba cererii (recomandarea nu intră în cache, deci e sigur).
     private String buildRecommendation(DayForecastDto today) {
+        String text;
         if (today.condition() == WeatherCondition.RAIN || today.rainChancePercent() >= 50) {
-            return "Plouă. Mai bine baschet sau volei în sală.";
+            text = "Plouă. Mai bine baschet sau volei în sală.";
+        } else if (today.tempMax() < 7) {
+            text = "E frig. Echipează-te bine sau alege o sală.";
+        } else {
+            text = "Vreme bună pentru fotbal, tenis și padel afară.";
         }
-        if (today.tempMax() < 7) {
-            return "E frig. Echipează-te bine sau alege o sală.";
-        }
-        return "Vreme bună pentru fotbal, tenis și padel afară.";
+        return Messages.translate(text, RequestLanguage.current());
     }
 }

@@ -1,6 +1,7 @@
 package ro.utcn.sportbuddy.users.model;
 
 import jakarta.persistence.*;
+import ro.utcn.sportbuddy.common.i18n.Language;
 
 // Cheia primară este chiar userId (relație 1-1 cu User, fără @OneToOne: legătura se face prin id).
 @Entity
@@ -29,6 +30,14 @@ public class UserSettings {
     private WhoCanAddMe whoCanAddMe = WhoCanAddMe.EVERYONE;
 
     private boolean showFriendList = true;
+
+    // Coloanele pot lipsi la conturile vechi (null în baza de date): getter-ele dau atunci valoarea implicită,
+    // așa că nu e nevoie de o migrare.
+    @Enumerated(EnumType.STRING)
+    private Language language;
+
+    @Enumerated(EnumType.STRING)
+    private Currency currency;
 
     protected UserSettings() {}
 
@@ -61,6 +70,12 @@ public class UserSettings {
 
     public WhoCanAddMe getWhoCanAddMe() { return whoCanAddMe; }
     public void setWhoCanAddMe(WhoCanAddMe whoCanAddMe) { this.whoCanAddMe = whoCanAddMe; }
+
+    public Language getLanguage() { return language == null ? Language.RO : language; }
+    public void setLanguage(Language language) { this.language = language; }
+
+    public Currency getCurrency() { return currency == null ? Currency.RON : currency; }
+    public void setCurrency(Currency currency) { this.currency = currency; }
 
     public boolean isShowFriendList() { return showFriendList; }
     public void setShowFriendList(boolean showFriendList) { this.showFriendList = showFriendList; }

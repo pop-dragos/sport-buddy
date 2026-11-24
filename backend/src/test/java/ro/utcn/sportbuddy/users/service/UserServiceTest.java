@@ -11,6 +11,10 @@ import ro.utcn.sportbuddy.catalog.dto.CityDto;
 import ro.utcn.sportbuddy.catalog.dto.SportDto;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.i18n.Language;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import ro.utcn.sportbuddy.users.dto.SportLevelDto;
 import ro.utcn.sportbuddy.users.dto.UpdateProfileRequest;
 import ro.utcn.sportbuddy.users.dto.UserMe;
@@ -377,6 +381,52 @@ class UserServiceTest {
         assertTrue(dto.showWeather());
         assertFalse(dto.notifyWeeklyDigest());
         assertEquals(WhoCanAddMe.EVERYONE, dto.whoCanAddMe());
+    }
+
+    @Test
+    void languageAndCurrencyDefaultToRomanianAndRonAndChangeWhenSent() {
+        UserSettings existing = new UserSettings(1L);
+        when(settings.findById(1L)).thenReturn(Optional.of(existing));
+        // conturile vechi nu au coloanele completate
+        assertEquals(Language.RO, service.getSettings(1L).language());
+        assertEquals(Currency.RON, service.getSettings(1L).currency());
+
+        UserSettingsDto saved = service.updateSettings(1L, new UserSettingsDto(Theme.SYSTEM, true, true,
+                true, true, false, ProfileVisibility.EVERYONE, WhoCanAddMe.EVERYONE, true,
+                Language.EN, Currency.EUR));
+
+        assertEquals(Language.EN, existing.getLanguage());
+        assertEquals(Currency.EUR, saved.currency());
+
+        // la o salvare fără limbă și monedă (de exemplu, o schimbare de temă) rămân cele alese
+        service.updateSettings(1L, new UserSettingsDto(Theme.DARK, true, true,
+                true, true, false, ProfileVisibility.EVERYONE, WhoCanAddMe.EVERYONE, true));
+        assertEquals(Language.EN, existing.getLanguage());
+        assertEquals(Currency.EUR, existing.getCurrency());
+    }
+
+    @Test
+    void newAccountStartsInTheLanguageOfTheRequest() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Accept-Language", "en-US");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        try {
+            when(catalog.findSport(any())).thenReturn(Optional.of(mock(SportDto.class)));
+            when(users.save(any())).thenAnswer(i -> {
+                User saved = i.getArgument(0);
+                ReflectionTestUtils.setField(saved, "id", 9L);
+                return saved;
+            });
+
+            service.createUser("Ana Nouă", "ana.noua@demo.ro", "hash", 21, null, null, null,
+                    AuthProvider.LOCAL, List.of(new SportLevelDto(1L, SportLevel.BEGINNER)));
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+        }
+
+        var saved = org.mockito.ArgumentCaptor.forClass(UserSettings.class);
+        verify(settings).save(saved.capture());
+        assertEquals(Language.EN, saved.getValue().getLanguage());
     }
 
     @Test

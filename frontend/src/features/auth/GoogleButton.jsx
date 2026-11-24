@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../../shared/i18n/useI18n'
 
 // Butonul oficial „Continuă cu Google” (Google Identity Services). La apăsare, Google deschide o fereastră
 // cu conturile din browser și ne dă un token semnat (credential), pe care îl verifică backend-ul.
@@ -33,6 +34,7 @@ export default function GoogleButton({ clientId, onCredential, text = 'continue_
   const box = useRef(null)
   const callback = useRef(onCredential)
   const [failed, setFailed] = useState(false)
+  const { lang, t } = useI18n()
 
   // butonul Google e desenat o singură dată; funcția apelată la răspuns poate să se schimbe între timp
   useEffect(() => { callback.current = onCredential })
@@ -56,16 +58,16 @@ export default function GoogleButton({ clientId, onCredential, text = 'continue_
           shape: 'pill',
           text,
           logo_alignment: 'center',
-          locale: 'ro',
+          locale: lang,
           width: Math.min(400, Math.max(200, Math.round(box.current.offsetWidth)))
         })
       })
       .catch(() => { if (!cancelled) setFailed(true) })
     return () => { cancelled = true }
-  }, [clientId, text])
+  }, [clientId, text, lang])
 
   if (failed) {
-    return <div className="mu err">Nu s-a putut încărca butonul Google. Verifică conexiunea la internet.</div>
+    return <div className="mu err">{t('Nu s-a putut încărca butonul Google. Verifică conexiunea la internet.')}</div>
   }
   return <div ref={box} className={`gbtn ${disabled ? 'off' : ''}`} />
 }

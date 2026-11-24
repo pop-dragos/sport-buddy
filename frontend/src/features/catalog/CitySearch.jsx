@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '../../shared/i18n/useI18n'
 import { useCity } from './useCity'
 import './catalog.css'
 
@@ -20,6 +21,7 @@ function suggest(cities, text) {
 
 export default function CitySearch() {
   const { cities, city, selectCity } = useCity()
+  const t = useT()
   // textul tastat; null = nu scrie nimic acum, se afișează orașul ales
   const [text, setText] = useState(null)
   const [active, setActive] = useState(0)
@@ -88,12 +90,12 @@ export default function CitySearch() {
         onFocus={(e) => e.target.select()}
         onBlur={close}
         onKeyDown={onKeyDown}
-        placeholder="Caută oraș"
+        placeholder={t('Caută oraș')}
       />
       <button
         type="button"
         className="city-toggle"
-        title="Toate orașele"
+        title={t('Toate orașele')}
         onClick={toggleAll}
         onKeyDown={onToggleKeyDown}
       >
@@ -102,7 +104,7 @@ export default function CitySearch() {
 
       {open && (
         <ul className="city-list">
-          {suggestions.length === 0 && <li className="empty">Niciun oraș găsit</li>}
+          {suggestions.length === 0 && <li className="empty">{t('Niciun oraș găsit')}</li>}
           {suggestions.map((c, i) => (
             <li
               key={c.id}

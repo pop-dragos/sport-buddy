@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getMessages, sendMessage } from '../../api/chat'
 import { errorMessage } from '../../api/http'
+import { useT } from '../../shared/i18n/useI18n'
 import './chat.css'
 
 const POLL_MS = 3000
@@ -16,6 +17,7 @@ function merge(current, incoming) {
 // Chat-ul lobby-ului; canChat vine din pagina lobby-ului (organizator sau jucător acceptat).
 // Pagina îl folosește cu key={lobbyId}, deci la alt lobby pornește de la zero.
 export default function LobbyChat({ lobbyId, canChat }) {
+    const t = useT()
     const [messages, setMessages] = useState([])
     const [text, setText] = useState('')
     const [error, setError] = useState('')
@@ -88,17 +90,17 @@ export default function LobbyChat({ lobbyId, canChat }) {
     if (!canChat || forbidden) {
         return (
             <div className="card">
-                <b>Chat lobby</b>
-                <div className="mu chat-note">Chatul e vizibil doar participanților acceptați.</div>
+                <b>{t('Chat lobby')}</b>
+                <div className="mu chat-note">{t('Chatul e vizibil doar participanților acceptați.')}</div>
             </div>
         )
     }
 
     return (
         <div className="card">
-            <b>Chat lobby</b>
+            <b>{t('Chat lobby')}</b>
             <div className="chat" ref={boxRef}>
-                {messages.length === 0 && <div className="mu">Încă nu a scris nimeni. Salută-ți colegii.</div>}
+                {messages.length === 0 && <div className="mu">{t('Încă nu a scris nimeni. Salută-ți colegii.')}</div>}
                 {messages.map((m) =>
                     m.type === 'SYSTEM' ? (
                         <div key={m.id} className="chat-m chat-system">{m.message}</div>
@@ -113,11 +115,11 @@ export default function LobbyChat({ lobbyId, canChat }) {
                 <input
                     value={text}
                     maxLength={MAX_LENGTH}
-                    placeholder="Scrie un mesaj..."
+                    placeholder={t('Scrie un mesaj...')}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={onKeyDown}
                 />
-                <button className="b" disabled={busy || !text.trim()} onClick={send}>Trimite</button>
+                <button className="b" disabled={busy || !text.trim()} onClick={send}>{t('Trimite')}</button>
             </div>
             {error && <div className="err chat-note">{error}</div>}
         </div>

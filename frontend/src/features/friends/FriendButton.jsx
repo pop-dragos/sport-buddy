@@ -3,10 +3,12 @@ import {
   acceptRequest, cancelRequest, getStatus, rejectRequest, removeFriend, sendRequest
 } from '../../api/friends'
 import { errorMessage } from '../../api/http'
+import { useT } from '../../shared/i18n/useI18n'
 import MessagesModal from './MessagesModal'
 
 // Butoanele de pe profilul altcuiva, după starea prieteniei: NONE, PENDING_SENT, PENDING_RECEIVED, FRIENDS.
 export default function FriendButton({ profile }) {
+  const t = useT()
   const [status, setStatus] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -40,15 +42,15 @@ export default function FriendButton({ profile }) {
       <div className="r" style={{ marginTop: 12, flexWrap: 'wrap' }}>
         {status.status === 'NONE' && (
           <button type="button" className="b" disabled={busy} onClick={() => run(() => sendRequest(profile.id))}>
-            Adaugă prieten
+            {t('Adaugă prieten')}
           </button>
         )}
 
         {status.status === 'PENDING_SENT' && (
           <>
-            <span className="tag">Cerere trimisă</span>
+            <span className="tag">{t('Cerere trimisă')}</span>
             <button type="button" className="b o" disabled={busy} onClick={() => run(() => cancelRequest(status.requestId))}>
-              Anulează cererea
+              {t('Anulează cererea')}
             </button>
           </>
         )}
@@ -56,20 +58,20 @@ export default function FriendButton({ profile }) {
         {status.status === 'PENDING_RECEIVED' && (
           <>
             <button type="button" className="b" disabled={busy} onClick={() => run(() => acceptRequest(status.requestId))}>
-              Acceptă cererea
+              {t('Acceptă cererea')}
             </button>
             <button type="button" className="b o" disabled={busy} onClick={() => run(() => rejectRequest(status.requestId))}>
-              Refuză
+              {t('Refuză')}
             </button>
           </>
         )}
 
         {status.status === 'FRIENDS' && (
           <>
-            <button type="button" className="b" onClick={() => setChatOpen(true)}>Mesaj</button>
-            <span className="tag">Prieten</span>
+            <button type="button" className="b" onClick={() => setChatOpen(true)}>{t('Mesaj')}</button>
+            <span className="tag">{t('Prieten')}</span>
             <button type="button" className="b o" disabled={busy} onClick={() => run(() => removeFriend(profile.id))}>
-              Elimină din prieteni
+              {t('Elimină din prieteni')}
             </button>
           </>
         )}

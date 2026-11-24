@@ -73,7 +73,7 @@ export const PRIVACY = {
           'sporturile și nivelul declarat, lobby-urile la care participi, prezența la meciuri, review-urile și ratingul;',
           'postările din feed, mesajele din chat-ul lobby-urilor și lista de prieteni;',
           'istoricul plăților simulate (sumă, dată, lobby), fără date de card;',
-          'setările tale (temă, notificări, confidențialitate).'
+          'setările tale (temă, limbă, monedă, notificări, confidențialitate).'
         ]
       ]
     },
@@ -109,7 +109,8 @@ export const PRIVACY = {
       body: [
         [
           'Google: conectarea cu Google și trimiterea emailurilor (Gmail);',
-          'Open-Meteo: prognoza meteo, pe baza coordonatelor orașului (nu a locației tale exacte).'
+          'Open-Meteo: prognoza meteo, pe baza coordonatelor orașului (nu a locației tale exacte);',
+          'Banca Națională a României (BNR): cursul valutar folosit ca să arătăm prețurile în EUR sau USD.'
         ]
       ]
     },
@@ -117,7 +118,7 @@ export const PRIVACY = {
       title: 'Ce rămâne în browser',
       body: [
         'Nu folosim cookie-uri de urmărire sau de reclamă. Browserul păstrează doar sesiunea ta de conectare și '
-          + 'câteva preferințe (de exemplu, „Ține-mă minte” și tema).'
+          + 'câteva preferințe (de exemplu, „Ține-mă minte”, tema, limba și moneda).'
       ]
     },
     {

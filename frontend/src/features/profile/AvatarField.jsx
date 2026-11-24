@@ -2,12 +2,14 @@ import { useRef, useState } from 'react'
 import { errorMessage } from '../../api/http'
 import { deleteAvatar, uploadAvatar } from '../../api/users'
 import Avatar from '../../shared/Avatar'
+import { useT } from '../../shared/i18n/useI18n'
 import { useAuth } from '../auth/useAuth'
 import { AVATAR_TYPES, avatarProblem } from './avatarRules'
 
 // Poza se trimite imediat după alegere; serverul verifică din nou tipul și mărimea.
 export default function AvatarField() {
   const { user, updateUser } = useAuth()
+  const t = useT()
   const input = useRef(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -34,15 +36,15 @@ export default function AvatarField() {
 
   return (
     <div className="f">
-      <label>Poză de profil</label>
+      <label>{t('Poză de profil')}</label>
       <div className="r">
         <Avatar name={user.fullName} url={user.avatarUrl} size={44} />
         <button type="button" className="b o" disabled={busy} onClick={() => input.current.click()}>
-          {user.avatarUrl ? 'Schimbă poza' : 'Alege o poză'}
+          {user.avatarUrl ? t('Schimbă poza') : t('Alege o poză')}
         </button>
         {user.avatarUrl && (
           <button type="button" className="b o" disabled={busy} onClick={() => run(deleteAvatar)}>
-            Șterge poza
+            {t('Șterge poza')}
           </button>
         )}
         <input ref={input} type="file" accept={AVATAR_TYPES.join(',')} className="hide" onChange={pick} />

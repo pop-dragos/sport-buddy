@@ -137,6 +137,23 @@ class AuthServiceTest {
     }
 
     @Test
+    void confirmationEmailIsSentInTheLanguageOfTheRequest() {
+        createUserReturns(7L);
+        var request = new org.springframework.mock.web.MockHttpServletRequest();
+        request.addHeader("Accept-Language", "en");
+        org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+                new org.springframework.web.context.request.ServletRequestAttributes(request));
+        try {
+            authService.register(register("parola123", AuthProvider.LOCAL));
+        } finally {
+            org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+        }
+
+        verify(mail).sendLink(eq("ana@exemplu.ro"), eq("Confirm your SportBuddy account"), eq("Welcome, Ana Popescu!"),
+                any(), eq("Confirm email"), any(), any());
+    }
+
+    @Test
     void simulatedSocialRegisterLogsInDirectly() {
         createUserReturns(8L);
 

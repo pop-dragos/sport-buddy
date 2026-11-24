@@ -6,8 +6,10 @@
   line-height: 1.6;
 }
 
-.legal-back {
-  align-self: flex-start;
+.legal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
 }
 

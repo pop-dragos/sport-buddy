@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import ro.utcn.sportbuddy.auth.dto.*;
 import ro.utcn.sportbuddy.auth.model.AuthTokenType;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.i18n.RequestLanguage;
+import ro.utcn.sportbuddy.common.mail.EmailTexts;
 import ro.utcn.sportbuddy.common.mail.MailService;
 import ro.utcn.sportbuddy.common.security.JwtService;
 import ro.utcn.sportbuddy.common.security.PasswordPolicy;
@@ -223,11 +225,10 @@ public class AuthService {
                 .filter(a -> !tokens.sentRecently(a.id(), AuthTokenType.RESET_PASSWORD, RESEND_WINDOW))
                 .ifPresent(a -> {
                     String token = tokens.create(a.id(), AuthTokenType.RESET_PASSWORD, RESET_LINK_VALIDITY);
-                    mail.sendLink(a.email(), "Resetarea parolei SportBuddy", "Salut, " + a.fullName() + "!",
-                            "Am primit o cerere de resetare a parolei pentru contul tău. "
-                                    + "Linkul este valabil o oră și poate fi folosit o singură dată.",
-                            "Alege o parolă nouă", frontendUrl + "/reset-password?token=" + token,
-                            "Dacă nu ai cerut tu resetarea, ignoră acest email: parola rămâne neschimbată.");
+                    // emailul pleacă în limba în care e deschisă aplicația
+                    EmailTexts.Text text = EmailTexts.resetPassword(RequestLanguage.current(), a.fullName());
+                    mail.sendLink(a.email(), text.subject(), text.greeting(), text.body(), text.button(),
+                            frontendUrl + "/reset-password?token=" + token, text.footer());
                 });
     }
 
@@ -246,11 +247,9 @@ public class AuthService {
 
     private void sendVerification(Long userId, String email, String fullName) {
         String token = tokens.create(userId, AuthTokenType.VERIFY_EMAIL, VERIFY_LINK_VALIDITY);
-        mail.sendLink(email, "Confirmă-ți contul SportBuddy", "Bun venit, " + fullName + "!",
-                "Mai ai un singur pas: confirmă adresa de email ca să-ți poți folosi contul. "
-                        + "Linkul este valabil 24 de ore.",
-                "Confirmă emailul", frontendUrl + "/verify-email?token=" + token,
-                "Dacă nu ți-ai creat tu un cont SportBuddy, ignoră acest email.");
+        EmailTexts.Text text = EmailTexts.verifyEmail(RequestLanguage.current(), fullName);
+        mail.sendLink(email, text.subject(), text.greeting(), text.body(), text.button(),
+                frontendUrl + "/verify-email?token=" + token, text.footer());
     }
 
     private AuthResponse issueToken(Long userId, boolean rememberMe) {

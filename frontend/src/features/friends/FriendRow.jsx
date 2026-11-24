@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom'
 import Avatar from '../../shared/Avatar'
+import { useI18n } from '../../shared/i18n/useI18n'
 import './friends.css'
 
 // Un rând din listele de pe pagina Prieteni: cine e, de unde, ce joacă; acțiunile vin din `children`.
 export default function FriendRow({ friend, sportNames, children }) {
+  const { t, tn } = useI18n()
   const details = [
     friend.cityName,
     friend.sportCodes.map((code) => sportNames[code] ?? code).join(', '),
     friend.matchesTogether != null &&
-      `${friend.matchesTogether} ${friend.matchesTogether === 1 ? 'meci' : 'meciuri'} împreună`
+      tn(friend.matchesTogether, '{n} meci împreună', '{n} meciuri împreună')
   ].filter(Boolean)
 
   return (
@@ -21,7 +23,7 @@ export default function FriendRow({ friend, sportNames, children }) {
         </div>
       </Link>
       <span className="r friend-actions">
-        <span className="friend-rating">{friend.rating != null ? `★ ${friend.rating.toFixed(1)}` : <span className="mu">nou</span>}</span>
+        <span className="friend-rating">{friend.rating != null ? `★ ${friend.rating.toFixed(1)}` : <span className="mu">{t('nou')}</span>}</span>
         {children}
       </span>
     </div>

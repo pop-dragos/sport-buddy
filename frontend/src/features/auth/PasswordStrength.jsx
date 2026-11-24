@@ -1,14 +1,16 @@
-import { passwordChecks, passwordStrength, STRENGTH_LABELS } from './passwordRules'
+import { useT } from '../../shared/i18n/useI18n'
+import { passwordChecks, passwordStrength, strengthLabel } from './passwordRules'
 
 // Bara de sub parola nouă: se umple pe măsură ce parola devine mai puternică,
 // iar sub ea se bifează regulile obligatorii.
 export default function PasswordStrength({ password }) {
+  const t = useT()
   const score = passwordStrength(password)
 
   return (
     <div className="pwm" data-score={score}>
-      <div className="pwm-bar" role="meter" aria-label="Puterea parolei" aria-valuemin={0} aria-valuemax={4}
-        aria-valuenow={score} aria-valuetext={STRENGTH_LABELS[score] || 'nicio parolă'}>
+      <div className="pwm-bar" role="meter" aria-label={t('Puterea parolei')} aria-valuemin={0} aria-valuemax={4}
+        aria-valuenow={score} aria-valuetext={strengthLabel(score) || t('nicio parolă')}>
         {[1, 2, 3, 4].map((i) => <i key={i} className={i <= score ? 'on' : ''} />)}
       </div>
       <div className="pwm-row">
@@ -24,7 +26,7 @@ export default function PasswordStrength({ password }) {
             </li>
           ))}
         </ul>
-        {score > 0 && <span className="pwm-label">{STRENGTH_LABELS[score]}</span>}
+        {score > 0 && <span className="pwm-label">{strengthLabel(score)}</span>}
       </div>
     </div>
   )

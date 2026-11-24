@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import { useI18n } from './shared/i18n/useI18n'
 import { Routes, Route } from 'react-router-dom'
 import Layout from './layout/Layout'
 import HomePage from './features/home/HomePage'
@@ -19,8 +20,10 @@ import RequireAuth from './features/auth/RequireAuth'
 const LandingPage = lazy(() => import('./features/landing/LandingPage'))
 
 export default function App() {
+  // la schimbarea limbii paginile se reiau de la zero, ca să nu rămână pe ecran texte din limba veche
+  const { lang } = useI18n()
   return (
-    <Routes>
+    <Routes key={lang}>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       {/* deschise din linkurile trimise pe email */}

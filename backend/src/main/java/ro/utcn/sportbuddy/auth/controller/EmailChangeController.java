@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ro.utcn.sportbuddy.auth.dto.ChangeEmailRequest;
 import ro.utcn.sportbuddy.auth.service.EmailChangeService;
+import ro.utcn.sportbuddy.common.i18n.Messages;
+import ro.utcn.sportbuddy.common.i18n.RequestLanguage;
 import ro.utcn.sportbuddy.common.security.CurrentUser;
 import ro.utcn.sportbuddy.users.dto.UserMe;
 
@@ -31,7 +33,7 @@ public class EmailChangeController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, String> resend() {
         emailChangeService.resend(CurrentUser.id());
-        return Map.of("message", "Am retrimis linkul de confirmare.");
+        return Map.of("message", Messages.translate("Am retrimis linkul de confirmare.", RequestLanguage.current()));
     }
 
     @DeleteMapping
