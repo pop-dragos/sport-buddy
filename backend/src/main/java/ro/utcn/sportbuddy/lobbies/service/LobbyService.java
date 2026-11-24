@@ -10,6 +10,8 @@ import ro.utcn.sportbuddy.catalog.dto.SportDto;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
 import ro.utcn.sportbuddy.common.events.AttendanceSavedEvent;
+import ro.utcn.sportbuddy.common.events.JoinRequestDecidedEvent;
+import ro.utcn.sportbuddy.common.events.JoinRequestedEvent;
 import ro.utcn.sportbuddy.common.events.LobbyCancelledEvent;
 import ro.utcn.sportbuddy.common.events.LobbyLockedEvent;
 import ro.utcn.sportbuddy.common.events.PlayerCancelledEvent;
@@ -174,6 +176,7 @@ public class LobbyService {
         request.setLobbyId(lobbyId);
         request.setUserId(userId);
         request = joinRequestRepository.save(request);
+        events.publishEvent(new JoinRequestedEvent(lobbyId, userId, lobby.getCreatorId()));
         return new JoinRequestResult(request.getId(), request.getStatus().name());
     }
 
@@ -189,6 +192,7 @@ public class LobbyService {
         request.setDecidedAt(Instant.now());
 
         addPlayer(lobbyId, request.getUserId());
+        events.publishEvent(new JoinRequestDecidedEvent(lobbyId, request.getUserId(), true));
 
         return toDetails(lobby, userId);
     }
@@ -200,6 +204,7 @@ public class LobbyService {
         JoinRequest request = getPendingRequest(lobbyId, requestId);
         request.setStatus(JoinRequestStatus.REJECTED);
         request.setDecidedAt(Instant.now());
+        events.publishEvent(new JoinRequestDecidedEvent(lobbyId, request.getUserId(), false));
         return toDetails(lobby, userId);
     }
 
@@ -640,6 +645,17 @@ public class LobbyService {
                 .map(LobbyPlayer::getUserId)
                 .filter(id -> !id.equals(userId))
                 .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    // Pentru notificări (C): cine e acum în lobby (organizatorul include), cu numele sportului pentru text.
+    public List<Long> participantIds(Long lobbyId) {
+        return lobbyPlayerRepository.findByLobbyIdAndStatusIn(lobbyId, PLAYED).stream()
+                .map(LobbyPlayer::getUserId)
+                .toList();
+    }
+
+    public String sportNameOf(Long lobbyId) {
+        return catalogService.findSport(getLobby(lobbyId).getSportId()).map(SportDto::name).orElse(null);
     }
 
     // Pentru chat (C): lobby-urile în care utilizatorul e participant, deci are acces la chat.

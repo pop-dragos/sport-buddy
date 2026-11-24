@@ -13,7 +13,7 @@ public class UserSettings {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Theme theme = Theme.SYSTEM;
+    private Theme theme = Theme.LIGHT;
 
     private boolean showWeather = true;
     private boolean notifJoinRequests = true;

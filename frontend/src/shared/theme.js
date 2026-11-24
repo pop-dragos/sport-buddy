@@ -1,4 +1,6 @@
-const KEY = 'sb_theme'
+// _v2: valorile „SYSTEM" salvate de versiunea veche (când sistemul era tema implicită) nu mai contează,
+// deci toți încep pe luminos până își alege fiecare altceva.
+const KEY = 'sb_theme_v2'
 
 // theme: SYSTEM, LIGHT sau DARK (valorile din setările de pe server).
 // Se ține minte și local, ca tema să fie aplicată înainte de conectare, fără licărire.
@@ -17,7 +19,7 @@ export function applyTheme(theme) {
 
 export function applyStoredTheme() {
   try {
-    applyTheme(localStorage.getItem(KEY) || 'SYSTEM')
+    applyTheme(localStorage.getItem(KEY) || 'LIGHT')
   } catch {
     // rămâne tema sistemului
   }

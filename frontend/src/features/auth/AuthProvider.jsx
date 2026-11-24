@@ -86,7 +86,7 @@ export default function AuthProvider({ children }) {
 
   // Ieșire voită: login-ul de după nu trebuie să ducă pe pagina celui care a ieșit.
   function endSession() {
-    applyTheme('SYSTEM')
+    applyTheme('LIGHT')
     setExpiredUserId(null)
     setUser(null)
     setStatus('guest')
