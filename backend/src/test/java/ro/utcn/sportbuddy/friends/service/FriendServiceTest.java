@@ -315,6 +315,23 @@ class FriendServiceTest {
     }
 
     @Test
+    void friendListShowsUnreadMessagesPerFriend() {
+        when(friendships.findAccepted(ANA)).thenReturn(List.of(accepted(5L, ANA, BOGDAN), accepted(6L, IOANA, ANA)));
+        Map<Long, PublicProfile> profiles = new LinkedHashMap<>();
+        profiles.put(BOGDAN, profile(BOGDAN, "bogdan", "Bogdan Pop"));
+        profiles.put(IOANA, profile(IOANA, "ioana", "Ioana Marin"));
+        when(users.findProfiles(any())).thenReturn(profiles);
+        // doar Bogdan mi-a scris: 3 mesaje necitite
+        when(messages.countUnreadBySender(ANA)).thenReturn(List.<Object[]>of(new Object[] { BOGDAN, 3L }));
+
+        Map<Long, Integer> unread = new HashMap<>();
+        for (FriendItem f : service.listFriends(ANA, null)) unread.put(f.userId(), f.unreadMessages());
+
+        assertEquals(3, unread.get(BOGDAN));
+        assertEquals(0, unread.get(IOANA));
+    }
+
+    @Test
     void suggestionsSkipFriendsAndPendingButNotDeclined() {
         Friendship declined = pending(9L, ANA, VLAD);
         declined.decline();

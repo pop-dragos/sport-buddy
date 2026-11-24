@@ -26,3 +26,17 @@
 .chat + .r input {
     flex: 1;
 }
+
+/* număr de mesaje necitite: lângă „Mesaj" în lista de prieteni și în agenda lobby-urilor */
+.unread-badge {
+    display: inline-block;
+    min-width: 18px;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 12px;
+    line-height: 16px;
+    text-align: center;
+}

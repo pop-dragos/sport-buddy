@@ -9,9 +9,10 @@ import ro.utcn.sportbuddy.chat.service.ChatService;
 import ro.utcn.sportbuddy.common.security.CurrentUser;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/lobbies/{lobbyId}/messages")
+@RequestMapping("/api/lobbies")
 public class ChatController {
 
     private final ChatService chatService;
@@ -20,15 +21,21 @@ public class ChatController {
         this.chatService = chatService;
     }
 
-    @GetMapping
+    @GetMapping("/{lobbyId}/messages")
     public List<ChatMessageDto> list(@PathVariable Long lobbyId,
                                      @RequestParam(required = false) Long after) {
         return chatService.getMessages(lobbyId, CurrentUser.id(), after);
     }
 
-    @PostMapping
+    @PostMapping("/{lobbyId}/messages")
     @ResponseStatus(HttpStatus.CREATED)
     public ChatMessageDto send(@PathVariable Long lobbyId, @Valid @RequestBody SendMessageRequest req) {
         return chatService.send(lobbyId, CurrentUser.id(), req.message());
+    }
+
+    // { lobbyId: câte mesaje necitite }, doar pentru lobby-urile mele cu mesaje noi
+    @GetMapping("/mine/chat-unread")
+    public Map<Long, Long> unread() {
+        return chatService.unreadByLobby(CurrentUser.id());
     }
 }

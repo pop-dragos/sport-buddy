@@ -7,6 +7,8 @@ export default {
   "Lobby-ul e confirmat. Dacă îl anulezi acum, primești o penalizare la rating. Continui?": "The lobby is confirmed. If you cancel it now, you'll get a rating penalty. Continue?",
   "Sigur anulezi lobby-ul?": "Are you sure you want to cancel the lobby?",
   "Înapoi": "Back",
+  "Copiază linkul": "Copy link",
+  "Link copiat": "Link copied",
   "Data": "Date",
   "Ora": "Time",
   "Organizator": "Organizer",

@@ -7,6 +7,8 @@ export default {
   "Nu ai nimic în această listă.": "You have nothing in this list.",
   "{a} din {b} jucători": "{a} of {b} players",
   "{n} cerere": "{n} request",
+  "{n} mesaj nou": "{n} new message",
+  "{n} mesaje noi": "{n} new messages",
   "{n} cereri": "{n} requests",
   "Cine a venit?": "Who showed up?",
   "Debifează jucătorii care au lipsit fără să anunțe. Se poate salva o singură dată.": "Uncheck the players who didn't show up without telling you. It can be saved only once.",

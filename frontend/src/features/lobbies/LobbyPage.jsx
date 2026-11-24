@@ -38,6 +38,8 @@ export default function LobbyPage() {
   const [paying, setPaying] = useState(false)
   // starea prieteniei cu fiecare participant: { [userId]: { status, requestId?, canAdd? } }
   const [friendStatuses, setFriendStatuses] = useState({})
+  // linkul lobby-ului a fost copiat (mesajul dispare singur după 2 secunde)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -71,6 +73,24 @@ export default function LobbyPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  // Copiază adresa paginii. Cine o deschide fără cont e dus la conectare și apoi înapoi la lobby.
+  async function copyLink() {
+    const url = `${window.location.origin}/lobbies/${lobby.id}`
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // clipboard blocat (de exemplu pagină fără HTTPS): încercăm metoda veche
+      const field = document.createElement('textarea')
+      field.value = url
+      document.body.appendChild(field)
+      field.select()
+      document.execCommand('copy')
+      field.remove()
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   function leave() {
@@ -121,6 +141,9 @@ export default function LobbyPage() {
               <span className="tag">{statusLabel(lobby.status)}</span>
             </div>
             <div className="mu">{trField(lobby.field.name)}, {lobby.city.name}</div>
+            <button type="button" className="b o lobby-share" onClick={copyLink}>
+              {copied ? t('Link copiat') : t('Copiază linkul')}
+            </button>
 
             <div className="lobby-facts">
               <Fact label={t('Data')} value={formatDay(lobby.dateTime)} />

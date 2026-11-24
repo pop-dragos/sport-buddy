@@ -216,10 +216,21 @@ public class FriendService implements FriendshipChecker {
     @Transactional(readOnly = true)
     public List<FriendItem> listFriends(Long me, String query) {
         String q = normalize(query);
+        Map<Long, Integer> unread = unreadMessages(me);
         return toItems(me, friendIds(me)).stream()
+                .map(f -> f.withUnreadMessages(unread.getOrDefault(f.userId(), 0)))
                 .filter(f -> q.isEmpty() || normalize(f.username()).contains(q) || normalize(f.fullName()).contains(q))
                 .sorted(Comparator.comparing(f -> normalize(f.fullName())))
                 .toList();
+    }
+
+    // { id prieten: mesaje necitite de la el }
+    private Map<Long, Integer> unreadMessages(Long me) {
+        Map<Long, Integer> unread = new HashMap<>();
+        for (Object[] row : messageRepository.countUnreadBySender(me)) {
+            unread.put((Long) row[0], ((Long) row[1]).intValue());
+        }
+        return unread;
     }
 
     // Prietenii altcuiva, pentru profilul lui. Respectă setările lui: „Lista de prieteni vizibilă” și,

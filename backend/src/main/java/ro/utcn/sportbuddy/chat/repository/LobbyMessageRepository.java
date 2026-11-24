@@ -12,4 +12,7 @@ public interface LobbyMessageRepository extends JpaRepository<LobbyMessage, Long
 
     // doar mesajele noi, pentru interogarea la 3 secunde
     List<LobbyMessage> findByLobbyIdAndIdGreaterThanOrderByIdAsc(Long lobbyId, Long afterId);
+
+    // mesajele scrise de alți utilizatori (fără cele de sistem) după id-ul dat: cele necitite
+    long countByLobbyIdAndSystemFalseAndSenderIdNotAndIdGreaterThan(Long lobbyId, Long senderId, Long afterId);
 }
