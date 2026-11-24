@@ -403,6 +403,24 @@ Pentru utilizatori noi `average` și `reliabilityPercent` sunt goale, iar `tags`
 - `topPlayers`: cei mai bine cotați jucători, cu cel puțin 5 review-uri.
 - Vremea (`/weather`) și feed-ul (`/feed`) se cer separat, de frontend.
 
+### Notifications
+
+| Metodă și cale | Rol |
+|---|---|
+| `GET /notifications` | ultimele 50 de notificări, cele mai noi primele |
+| `GET /notifications/unread-count` | `{ "count": 3 }`, pentru insigna clopoțelului (interogare la 30 de secunde) |
+| `POST /notifications/{id}/read` | o marchează citită; 404 dacă nu e a mea |
+| `POST /notifications/read-all` | le marchează pe toate citite |
+
+Notificare:
+```json
+{ "id": 31, "type": "JOIN_REQUESTED", "lobbyId": 55, "actorId": 7, "actorName": "andrei",
+  "subject": "Fotbal", "createdAt": "2026-11-24T18:30:00", "read": false }
+```
+Tipuri: `JOIN_REQUESTED` (organizatorul primește o cerere), `JOIN_ACCEPTED` și `JOIN_REJECTED` (cel care a cerut), `LOBBY_LOCKED` (participanții), `LOBBY_CANCELLED` (participanții, `actorName` e organizatorul), `FRIEND_REQUEST` și `FRIEND_ACCEPTED`. `lobbyId` și `subject` (sportul) lipsesc la prietenii, iar `actorId`/`actorName` la `LOBBY_LOCKED` și la deciziile de alăturare. Textul îl compune frontend-ul, în limba aleasă.
+
+Doar `JOIN_REQUESTED` ține cont de setarea „Cereri de alăturare" (`notifyJoinRequests`). Mesajele (chat, mesaje directe) nu generează notificări: au deja insigne de necitite.
+
 ---
 
 ## 4. Evenimente între module (`common/events`)
@@ -416,6 +434,17 @@ Publicate de B (`lobbies`), ascultate de C (`ratings` și `chat`). Clasele se cr
 | `LobbyCancelledEvent` | `lobbyId`, `hostUserId`, `late` | dacă `late`: review automat de 2 stele pentru organizator |
 | `AttendanceSavedEvent` | `lobbyId`, `hostUserId`, `presentUserIds`, `absentUserIds` | crește `attendances` pentru prezenți (și organizator), review automat de 1 stea (`NO_SHOW`) pentru absenți |
 
+Ascultate și de `notifications` (C), pentru notificările din aplicație:
+
+| Eveniment | Câmpuri | Cine publică | Notificare |
+|---|---|---|---|
+| `LobbyLockedEvent` | (vezi mai sus) | `lobbies` | `LOBBY_LOCKED` pentru participanți |
+| `LobbyCancelledEvent` | (vezi mai sus) | `lobbies` | `LOBBY_CANCELLED` pentru participanți, fără organizator |
+| `JoinRequestedEvent` | `lobbyId`, `requesterId`, `hostUserId` | `lobbies` | `JOIN_REQUESTED` pentru organizator |
+| `JoinRequestDecidedEvent` | `lobbyId`, `userId`, `accepted` | `lobbies` | `JOIN_ACCEPTED` sau `JOIN_REJECTED` pentru cel care a cerut |
+| `FriendRequestedEvent` | `requesterId`, `addresseeId` | `friends` | `FRIEND_REQUEST` |
+| `FriendAcceptedEvent` | `requesterId`, `accepterId` | `friends` | `FRIEND_ACCEPTED` pentru cel care a trimis cererea |
+
 **Propunere nouă (necesită acordul grupului):** `PlayerJoinedEvent` cu `lobbyId` și `userId`, publicat când organizatorul acceptă o cerere. Fără el, chat-ul nu poate afișa mesajul de sistem „X s-a înscris", cerut în brief.
 
 ---
@@ -427,6 +456,9 @@ Publicate de B (`lobbies`), ascultate de C (`ratings` și `chat`). Clasele se cr
 | `lobbies` (B) | `UserService` (A) | username și nume pentru participanți |
 | `lobbies` (B) | `RatingService.getStats(userId)` (C) | rating, număr de review-uri, fiabilitate |
 | `chat` (C) | `LobbyService.isParticipant(lobbyId, userId)` (B) | cine are voie în chat |
+| `chat` (C) | `LobbyService.participatingLobbyIds(userId)` (B) | lobby-urile mele, pentru mesajele necitite |
+| `notifications` (C) | `LobbyService.participantIds(lobbyId)`, `sportNameOf(lobbyId)` (B) | cine primește notificarea de anulare, sportul din text |
+| `notifications` (C) | `UserService` (A) | cont activ, setări de notificări, nume de utilizator |
 | `ratings` (C) | `LobbyService` (B) | participanții unui lobby încheiat, pentru review-uri |
 | `weather` (C) | `CatalogService` (B) | coordonatele orașului |
 | `friends` (A) | `LobbyService` (B) | „Posibili cunoscuți" și „meciuri împreună" |

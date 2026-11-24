@@ -132,6 +132,7 @@ public final class Messages {
         add("Alege tipul postării.", "Choose the post type.");
         add("Pagina nu poate fi negativă.", "The page cannot be negative.");
         add("Postarea nu există.", "The post does not exist.");
+        add("Notificarea nu există.", "The notification does not exist.");
         add("Textul nu poate fi gol.", "The text cannot be empty.");
         pattern("Mărimea paginii trebuie să fie între 1 și (\\d+)\\.", "Page size must be between 1 and $1.");
 

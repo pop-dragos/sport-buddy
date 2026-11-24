@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import CitySearch from '../features/catalog/CitySearch'
 import CreateLobbyModal from '../features/lobbies/CreateLobbyModal'
+import NotificationBell from '../features/notifications/NotificationBell'
 import { useT } from '../shared/i18n/useI18n'
 
 export default function Header() {
@@ -27,6 +28,7 @@ export default function Header() {
       <h2>{getPageTitle()}</h2>
       <div className="r">
         <CitySearch />
+        <NotificationBell />
         <button className="b plus" title={t('Creează lobby')} onClick={() => setCreating(true)}>+</button>
       </div>
 

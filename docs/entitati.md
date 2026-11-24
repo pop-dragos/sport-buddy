@@ -47,6 +47,7 @@ erDiagram
 | `payments` | B | `Payment` |
 | `ratings` | C | `Review`, `UserRatingStats` |
 | `chat` | C | `LobbyMessage`, `LobbyChatRead` |
+| `notifications` | C | `Notification` |
 | `weather`, `dashboard` | C | nu au tabele (vremea se ține în memorie, `dashboard` doar citește din alte module) |
 
 ---
@@ -307,6 +308,23 @@ Până la ce mesaj a citit fiecare participant chat-ul unui lobby; de aici vine 
 | lastReadId | Long | id-ul ultimului `LobbyMessage` citit; doar crește |
 
 Se actualizează când utilizatorul primește mesaje prin `GET /lobbies/{id}/messages`. Necitite sunt mesajele de utilizator (nu cele de sistem) ale altora, cu id mai mare decât `lastReadId`.
+
+### `Notification` (`notifications`)
+
+O notificare în aplicație (clopoțelul din header). Textul nu se salvează: frontend-ul îl compune din `type` și câmpuri, ca să respecte limba aleasă.
+
+| Câmp | Tip | Reguli |
+|---|---|---|
+| id | Long | PK |
+| userId | Long | cine o primește; index împreună cu `id` |
+| type | enum | `JOIN_REQUESTED`, `JOIN_ACCEPTED`, `JOIN_REJECTED`, `LOBBY_LOCKED`, `LOBBY_CANCELLED`, `FRIEND_REQUEST`, `FRIEND_ACCEPTED` |
+| lobbyId | Long | `null` la prietenii |
+| actorId, actorName | Long, String | cine a declanșat-o; `null` când vine de la aplicație (nume salvat în momentul acțiunii) |
+| subject | String | sportul lobby-ului, ca în catalog; `null` la prietenii |
+| createdAt | Instant | |
+| readAt | Instant | `null` până când e citită |
+
+Nu se creează pentru cine a făcut chiar acțiunea, pentru conturi inactive, nici la `JOIN_REQUESTED` dacă organizatorul și-a oprit „Cereri de alăturare" din setări.
 
 ---
 

@@ -377,7 +377,7 @@ class UserServiceTest {
 
         UserSettingsDto dto = service.getSettings(1L);
 
-        assertEquals(Theme.SYSTEM, dto.theme());
+        assertEquals(Theme.LIGHT, dto.theme());
         assertTrue(dto.showWeather());
         assertFalse(dto.notifyWeeklyDigest());
         assertEquals(WhoCanAddMe.EVERYONE, dto.whoCanAddMe());

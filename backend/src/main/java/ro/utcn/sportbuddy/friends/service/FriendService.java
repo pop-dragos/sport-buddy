@@ -1,5 +1,6 @@
 package ro.utcn.sportbuddy.friends.service;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,8 @@ import ro.utcn.sportbuddy.catalog.dto.CityDto;
 import ro.utcn.sportbuddy.catalog.dto.SportDto;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.events.FriendAcceptedEvent;
+import ro.utcn.sportbuddy.common.events.FriendRequestedEvent;
 import ro.utcn.sportbuddy.friends.dto.*;
 import ro.utcn.sportbuddy.friends.model.DirectMessage;
 import ro.utcn.sportbuddy.friends.model.Friendship;
@@ -43,10 +46,12 @@ public class FriendService implements FriendshipChecker {
     private final CatalogService catalogService;
     private final RatingService ratingService;
     private final LobbyService lobbyService;
+    private final ApplicationEventPublisher events;
 
     public FriendService(FriendshipRepository friendshipRepository, DirectMessageRepository messageRepository,
                          UserService userService, CatalogService catalogService, RatingService ratingService,
-                         LobbyService lobbyService) {
+                         LobbyService lobbyService, ApplicationEventPublisher events) {
+        this.events = events;
         this.friendshipRepository = friendshipRepository;
         this.messageRepository = messageRepository;
         this.userService = userService;
@@ -140,6 +145,7 @@ public class FriendService implements FriendshipChecker {
             }
             if (f.isPending()) {
                 f.accept();
+                events.publishEvent(new FriendAcceptedEvent(f.getRequesterId(), me));
                 return new FriendStatus(FriendStatus.Status.FRIENDS, null);
             }
             // o cerere refuzată mai demult nu blochează una nouă; flush ca rândul vechi să dispară înainte de inserare
@@ -149,6 +155,7 @@ public class FriendService implements FriendshipChecker {
 
         checkCanAdd(me, target);
         Friendship created = friendshipRepository.save(new Friendship(me, target));
+        events.publishEvent(new FriendRequestedEvent(me, target));
         return new FriendStatus(FriendStatus.Status.PENDING_SENT, created.getId());
     }
 
@@ -166,7 +173,9 @@ public class FriendService implements FriendshipChecker {
 
     @Transactional
     public void accept(Long me, Long requestId) {
-        received(me, requestId).accept();
+        Friendship request = received(me, requestId);
+        request.accept();
+        events.publishEvent(new FriendAcceptedEvent(request.getRequesterId(), me));
     }
 
     @Transactional

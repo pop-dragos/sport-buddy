@@ -2,11 +2,14 @@ package ro.utcn.sportbuddy.friends.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import ro.utcn.sportbuddy.catalog.dto.SportDto;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.events.FriendAcceptedEvent;
+import ro.utcn.sportbuddy.common.events.FriendRequestedEvent;
 import ro.utcn.sportbuddy.friends.dto.FriendItem;
 import ro.utcn.sportbuddy.friends.dto.FriendStatus;
 import ro.utcn.sportbuddy.friends.model.DirectMessage;
@@ -46,6 +49,7 @@ class FriendServiceTest {
     private CatalogService catalog;
     private RatingService ratings;
     private LobbyService lobbies;
+    private ApplicationEventPublisher events;
     private FriendService service;
 
     @BeforeEach
@@ -56,7 +60,8 @@ class FriendServiceTest {
         catalog = mock(CatalogService.class);
         ratings = mock(RatingService.class);
         lobbies = mock(LobbyService.class);
-        service = new FriendService(friendships, messages, users, catalog, ratings, lobbies);
+        events = mock(ApplicationEventPublisher.class);
+        service = new FriendService(friendships, messages, users, catalog, ratings, lobbies, events);
 
         when(users.isActive(anyLong())).thenReturn(true);
         when(users.whoCanAddMe(anyLong())).thenReturn(WhoCanAddMe.EVERYONE);
@@ -153,6 +158,7 @@ class FriendServiceTest {
         assertEquals(FriendStatus.Status.PENDING_SENT, s.status());
         assertEquals(100L, s.requestId());
         verify(friendships).save(argThat(f -> f.getRequesterId().equals(ANA) && f.getAddresseeId().equals(BOGDAN)));
+        verify(events).publishEvent(new FriendRequestedEvent(ANA, BOGDAN));
     }
 
     @Test
@@ -188,6 +194,8 @@ class FriendServiceTest {
         assertEquals(FriendStatus.Status.FRIENDS, s.status());
         assertTrue(theirs.isAccepted());
         verify(friendships, never()).save(any());
+        // cel care mi-a scris primul află că suntem prieteni acum
+        verify(events).publishEvent(new FriendAcceptedEvent(BOGDAN, ANA));
     }
 
     @Test
@@ -233,6 +241,7 @@ class FriendServiceTest {
 
         assertTrue(f.isAccepted());
         assertNotNull(f.getRespondedAt());
+        verify(events).publishEvent(new FriendAcceptedEvent(BOGDAN, ANA));
     }
 
     @Test
