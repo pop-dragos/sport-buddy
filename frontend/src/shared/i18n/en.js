@@ -1,6 +1,7 @@
 import auth from './en/auth.js'
 import catalog from './en/catalog.js'
 import home from './en/home.js'
+import inbox from './en/inbox.js'
 import landing from './en/landing.js'
 import layout from './en/layout.js'
 import lobbies from './en/lobbies.js'
@@ -13,6 +14,7 @@ export default {
   ...auth,
   ...catalog,
   ...home,
+  ...inbox,
   ...landing,
   ...layout,
   ...lobbies,

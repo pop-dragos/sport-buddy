@@ -153,6 +153,24 @@ Sugestiile („Posibili cunoscuți"): întâi jucătorii din lobby-urile mele (`
 Mesaj direct: `{ "id": 90, "senderId": 7, "message": "Salut", "sentAt": "2026-10-19T12:00:00" }`. Fără `after` vin ultimele 100 de mesaje, în ordine cronologică; cu `after` doar mesajele cu id mai mare. Citirea marchează mesajele primite ca citite. Mesaje se pot trimite doar între prieteni (`403 NOT_FRIENDS`).
 Erori la cerere de prietenie: `400` (cerere către tine), `404` (utilizator inexistent sau șters), `409 ALREADY_FRIENDS`, `409 REQUEST_EXISTS`, `403 FRIEND_REQUESTS_DISABLED` (conform setării `whoCanAddMe`: `NOBODY`, sau `FRIENDS_OF_FRIENDS` fără niciun prieten comun).
 
+### Inbox (căsuța de mesaje)
+
+Toate conversațiile într-un singur loc: cele directe cu prietenii și chat-urile lobby-urilor mele. Citește tabelele `direct_messages` (Friends) și `lobby_messages` (Chat); mesajele se trimit și se citesc tot prin `/friends/{userId}/messages` și `/lobbies/{id}/messages`.
+
+| Metodă și cale | Rol |
+|---|---|
+| `GET /messages/conversations` | conversațiile mele (directe și de grup), cea mai recentă prima |
+| `GET /messages/unread-count` | `{ "count": 3 }`, totalul necititelor (directe și din grupuri), pentru insigna iconiței din header (interogare la 15 secunde) |
+
+Element din `GET /messages/conversations`:
+```json
+{ "type": "GROUP", "id": 10, "title": "Fotbal", "place": "Teren de fotbal", "avatarUrl": null,
+  "sportCode": "football", "lobbyAt": "2026-11-25T20:00:00", "lastSender": "bogdan",
+  "lastMessage": "Aduc eu mingea", "lastFromMe": false, "sentAt": "2026-11-24T18:30:00", "unread": 2 }
+```
+- `type: DIRECT`: `id` e id-ul prietenului, `title` e numele lui de utilizator, iar `place`, `sportCode`, `lobbyAt` și `lastSender` sunt goale. Apar doar conversațiile cu prieteni actuali (mesajele directe se pot deschide doar între prieteni); conturile șterse dispar.
+- `type: GROUP`: `id` e id-ul lobby-ului, `title` e sportul, `place` e terenul, iar `lastSender` e cine a scris ultimul mesaj (gol la mesajele de sistem). Apar lobby-urile în care sunt participant și în care s-a scris cel puțin un mesaj.
+
 ### Feed
 
 | Metodă și cale | Rol |

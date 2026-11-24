@@ -6,6 +6,8 @@ import HomePage from './features/home/HomePage'
 import AgendaPage from './features/lobbies/AgendaPage'
 import LobbyPage from './features/lobbies/LobbyPage'
 import FriendsPage from './features/friends/FriendsPage'
+import ConversationPage from './features/inbox/ConversationPage'
+import MessagesLayout from './features/inbox/MessagesLayout'
 import ProfilePage from './features/profile/ProfilePage'
 import SettingsPage from './features/profile/SettingsPage'
 import LoginPage from './features/auth/LoginPage'
@@ -39,6 +41,10 @@ export default function App() {
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/lobbies/:id" element={<LobbyPage />} />
           <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/messages" element={<MessagesLayout />}>
+            <Route path="direct/:id" element={<ConversationPage kind="direct" />} />
+            <Route path="lobby/:id" element={<ConversationPage kind="lobby" />} />
+          </Route>
           <Route path="/profile/:id" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
