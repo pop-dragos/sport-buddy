@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { getStatuses } from '../../api/friends'
 import { errorMessage } from '../../api/http'
 import {
   acceptRequest, cancelLobby, getLobby, leaveLobby, lockLobby, rejectRequest, requestToJoin, saveAttendance
@@ -9,6 +10,7 @@ import SimulationCard from './SimulationCard'
 import PaymentModal from '../payments/PaymentModal'
 import LobbyChat from '../chat/LobbyChat'
 import ReviewCard from '../ratings/ReviewCard'
+import MiniFriendButton from '../friends/MiniFriendButton'
 import Avatar from '../../shared/Avatar'
 import Skeleton from '../../shared/Skeleton'
 import { useAuth } from '../auth/useAuth'
@@ -33,6 +35,8 @@ export default function LobbyPage() {
   const [busy, setBusy] = useState(false)
   // fereastra de plată online e deschisă
   const [paying, setPaying] = useState(false)
+  // starea prieteniei cu fiecare participant: { [userId]: { status, requestId?, canAdd? } }
+  const [friendStatuses, setFriendStatuses] = useState({})
 
   useEffect(() => {
     let cancelled = false
@@ -41,6 +45,17 @@ export default function LobbyPage() {
       .catch((err) => { if (!cancelled) setError(errorMessage(err)) })
     return () => { cancelled = true }
   }, [id])
+
+  // o singură cerere pentru toți participanții; se reface doar când se schimbă cine participă
+  const othersKey = lobby?.participants.map((p) => p.userId).filter((uid) => uid !== user.id).join(',') ?? ''
+  useEffect(() => {
+    if (!othersKey) return
+    let cancelled = false
+    getStatuses(othersKey.split(','))
+      .then((res) => { if (!cancelled) setFriendStatuses(res) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [othersKey])
 
   // Rulează o acțiune, apoi afișează lobby-ul actualizat.
   // Acceptarea și refuzul întorc direct lobby-ul; la celelalte îl cerem din nou.
@@ -208,6 +223,15 @@ export default function LobbyPage() {
                       {p.userId === user.id && <span className="mu"> (tu)</span>}
                       {p.isHost && <div className="mu lobby-small">organizator</div>}
                       {p.attended === false && <div className="mu lobby-small">absent</div>}
+                      {p.userId !== user.id && (
+                        <div className="lobby-friend">
+                          <MiniFriendButton
+                            userId={p.userId}
+                            status={friendStatuses[p.userId]}
+                            onChange={(s) => setFriendStatuses((all) => ({ ...all, [p.userId]: s }))}
+                          />
+                        </div>
+                      )}
                     </span>
                   </span>
                   <span className="lobby-rating">

@@ -24,6 +24,9 @@ export const removeFriend = (userId) => send('DELETE', `/friends/${userId}`)
 
 export const getStatus = (userId) => http(`/friends/status/${userId}`)
 
+// starea față de mai mulți utilizatori deodată: { [userId]: { status, requestId?, canAdd? } }
+export const getStatuses = (userIds) => http(`/friends/statuses?ids=${userIds.join(',')}`)
+
 export function getMessages(userId, afterId) {
   return http(`/friends/${userId}/messages${afterId ? `?after=${afterId}` : ''}`)
 }

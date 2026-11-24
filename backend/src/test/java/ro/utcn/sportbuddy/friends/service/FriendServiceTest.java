@@ -94,6 +94,56 @@ class FriendServiceTest {
         return assertThrows(ApiException.class, action::run);
     }
 
+    // ---------- stările pentru mai mulți (participanții unui lobby) ----------
+
+    @Test
+    void statusesCoverEveryRelationInOneQuery() {
+        Friendship declined = pending(7L, VLAD, ANA);
+        declined.decline();
+        when(friendships.findInvolving(ANA)).thenReturn(List.of(
+                accepted(5L, ANA, BOGDAN), pending(6L, ANA, IOANA), declined, pending(8L, 9L, ANA)));
+
+        Map<Long, FriendStatus> s = service.statuses(ANA, List.of(ANA, BOGDAN, IOANA, VLAD, 9L, 10L, BOGDAN));
+
+        assertFalse(s.containsKey(ANA), "eu nu apar în listă");
+        assertEquals(FriendStatus.Status.FRIENDS, s.get(BOGDAN).status());
+        assertEquals(FriendStatus.Status.PENDING_SENT, s.get(IOANA).status());
+        assertEquals(6L, s.get(IOANA).requestId());
+        assertEquals(FriendStatus.Status.PENDING_RECEIVED, s.get(9L).status());
+        assertEquals(8L, s.get(9L).requestId());
+        // o cerere refuzată nu blochează una nouă
+        assertEquals(FriendStatus.Status.NONE, s.get(VLAD).status());
+        assertTrue(s.get(VLAD).canAdd());
+        assertTrue(s.get(10L).canAdd());
+        assertEquals(5, s.size());
+        verify(friendships, never()).findBetween(anyLong(), anyLong());
+    }
+
+    @Test
+    void statusesRespectWhoCanAddMe() {
+        when(friendships.findInvolving(ANA)).thenReturn(List.of(accepted(5L, ANA, BOGDAN)));
+        when(users.whoCanAddMe(IOANA)).thenReturn(WhoCanAddMe.NOBODY);
+        when(users.whoCanAddMe(VLAD)).thenReturn(WhoCanAddMe.FRIENDS_OF_FRIENDS);
+        when(users.whoCanAddMe(9L)).thenReturn(WhoCanAddMe.FRIENDS_OF_FRIENDS);
+        // Bogdan e prieten și cu 9, deci Ana e „prieten al unui prieten” pentru 9, dar nu pentru Vlad
+        when(friendships.findAccepted(9L)).thenReturn(List.of(accepted(11L, BOGDAN, 9L)));
+        when(users.isActive(10L)).thenReturn(false);
+
+        Map<Long, FriendStatus> s = service.statuses(ANA, List.of(IOANA, VLAD, 9L, 10L));
+
+        assertFalse(s.get(IOANA).canAdd());
+        assertFalse(s.get(VLAD).canAdd());
+        assertTrue(s.get(9L).canAdd());
+        assertFalse(s.get(10L).canAdd());
+    }
+
+    @Test
+    void statusesRejectTooManyIds() {
+        List<Long> ids = new ArrayList<>();
+        for (long i = 10; i < 10 + FriendService.MAX_STATUSES + 1; i++) ids.add(i);
+        assertThrows(ApiException.class, () -> service.statuses(ANA, ids));
+    }
+
     // ---------- trimitere cerere ----------
 
     @Test
