@@ -5,3 +5,6 @@ application-local.properties
 .DS_Store
 # pozele de profil încărcate local
 uploads/
+
+# secretele pentru docker compose
+.env

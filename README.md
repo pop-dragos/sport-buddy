@@ -15,3 +15,11 @@ Aplicație web creată pentru organizarea meciurilor amatoare de sport, gestiona
    spring.datasource.url=jdbc:postgresql://localhost:5432/sportbuddy
    spring.datasource.username=postgres
    spring.datasource.password=parola_ta_locala
+## PORNIRE CU DOCKER (recomandat)
+Necesită doar Docker Desktop, fără JDK, Node sau PostgreSQL instalate.
+1. Copiază `.env.example` în `.env` și completează parola bazei de date și secretul JWT (și, opțional, emailul și Google).
+2. Din rădăcina proiectului: `docker compose up --build`
+3. Aplicația: http://localhost:5173 (API-ul rulează pe http://localhost:8080).
+4. Oprire: `docker compose down` (datele rămân). Ștergerea datelor: `docker compose down -v`.
+
+Pornirea manuală (cele două terminale) rămâne posibilă, conform pașilor de mai sus.
