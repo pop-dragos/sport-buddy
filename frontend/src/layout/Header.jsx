@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import CitySearch from '../features/catalog/CitySearch'
 import CreateLobbyModal from '../features/lobbies/CreateLobbyModal'
+import InboxButton from '../features/inbox/InboxButton'
 import NotificationBell from '../features/notifications/NotificationBell'
 import { useT } from '../shared/i18n/useI18n'
 
@@ -15,8 +16,10 @@ export default function Header() {
       case '/': return t('Acasă')
       case '/agenda': return t('Agenda mea')
       case '/friends': return t('Prieteni')
+      case '/messages': return t('Mesaje')
       case '/settings': return t('Setări')
       default:
+        if (location.pathname.startsWith('/messages/')) return t('Mesaje')
         if (location.pathname.startsWith('/profile')) return t('Profil')
         if (location.pathname.startsWith('/lobbies')) return t('Lobby')
         return 'SportBuddy'
@@ -29,6 +32,7 @@ export default function Header() {
       <div className="r">
         <CitySearch />
         <NotificationBell />
+        <InboxButton />
         <button className="b plus" title={t('Creează lobby')} onClick={() => setCreating(true)}>+</button>
       </div>
 

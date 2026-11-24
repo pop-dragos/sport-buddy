@@ -1,0 +1,365 @@
+/* Iconița de mesaje din header, lista conversațiilor și conversația pe toată pagina */
+.inbox-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--bd);
+  border-radius: 50%;
+  background: none;
+  color: var(--tx);
+}
+
+.inbox-btn:hover {
+  background: var(--sf);
+}
+
+.inbox-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  line-height: 17px;
+  text-align: center;
+}
+
+/* ---------- lista ---------- */
+.inbox-list {
+  padding: 0;
+  overflow: hidden;
+}
+
+.inbox-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--bd);
+  color: inherit;
+  text-decoration: none;
+}
+
+.inbox-row:last-child {
+  border-bottom: 0;
+}
+
+.inbox-row:hover {
+  background: var(--sf);
+}
+
+.inbox-group-ic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--sf);
+}
+
+.inbox-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+
+.inbox-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.inbox-title b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.inbox-kind {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border: 1px solid var(--bd);
+  border-radius: 99px;
+  color: var(--mu);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.inbox-preview {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.inbox-row.unread .inbox-preview {
+  color: var(--tx);
+  font-weight: 600;
+}
+
+.inbox-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.inbox-meta .unread-badge {
+  margin-left: 0;
+}
+
+.inbox-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* ---------- conversația pe toată pagina ---------- */
+/* pagina Mesaje: toată lățimea și înălțimea, conversația în stânga și lista în dreapta */
+.page.page-chat {
+  max-width: none;
+  height: 100%;
+  min-height: 320px;
+}
+
+.msgs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  height: 100%;
+}
+
+/* cu o conversație deschisă: ea în stânga, lista în dreapta */
+.msgs.has-chat {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.msgs-main {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* lista are același chenar ca panoul de chat și ocupă toată înălțimea, chiar și cu puține conversații */
+.msgs-list {
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.msgs-list .inbox-list,
+.msgs-list .inbox-empty {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.inbox-row.active {
+  background: var(--sf);
+  box-shadow: inset 3px 0 0 #2563eb;
+}
+
+/* cu lista alături, săgeata de întoarcere nu mai trebuie */
+.msgs .convo-back {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .msgs.has-chat {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+}
+
+/* pe telefon se vede un singur panou: lista sau conversația */
+@media (max-width: 760px) {
+  .msgs.has-chat {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .msgs.has-chat .msgs-list {
+    display: none;
+  }
+
+  .msgs .convo-back {
+    display: flex;
+  }
+}
+
+.convo {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.convo-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bd);
+}
+
+.convo-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--tx);
+}
+
+.convo-back:hover {
+  background: var(--sf);
+}
+
+.convo-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.convo-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.convo-title b,
+.convo-title .mu {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.convo-feed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 14px;
+  overflow-y: auto;
+  background: var(--sf);
+}
+
+.convo-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 75%;
+}
+
+.convo-msg.mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.convo-author {
+  margin: 0 4px 2px;
+  color: var(--mu);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.convo-bubble {
+  padding: 7px 12px;
+  border: 1px solid var(--bd);
+  border-radius: 14px;
+  background: var(--bg);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.convo-msg.mine .convo-bubble {
+  border-color: transparent;
+  background: var(--ac);
+  color: var(--at);
+}
+
+.convo-time {
+  margin: 2px 4px 0;
+  font-size: 11px;
+}
+
+.convo-system {
+  align-self: center;
+  color: var(--mu);
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+}
+
+.convo-error {
+  padding: 6px 14px 0;
+}
+
+.convo-form {
+  padding: 10px 14px;
+  border-top: 1px solid var(--bd);
+}
+
+.convo-form input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
+}
+
+.convo-form button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .convo-msg {
+    max-width: 88%;
+  }
+}
+
+/* pe telefon, cu o conversație deschisă: fără bara de sus și fără meniul de jos, doar chat-ul pe tot ecranul;
+   săgeata din stânga sus duce la lista conversațiilor */
+@media (max-width: 640px) {
+  .app.chat-open main > header,
+  .app.chat-open .bottom-nav {
+    display: none;
+  }
+
+  .app.chat-open #ct {
+    padding: 0;
+  }
+
+  .app.chat-open .convo {
+    border: 0;
+    border-radius: 0;
+  }
+
+  .app.chat-open .convo-back {
+    width: 40px;
+    height: 40px;
+  }
+
+  .app.chat-open .convo-form {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+}

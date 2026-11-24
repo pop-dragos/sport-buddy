@@ -10,6 +10,8 @@ import { NavigationProvider } from './NavigationProvider'
 function pageClass(pathname) {
   if (pathname === '/') return undefined
   if (pathname.startsWith('/lobbies/')) return 'page page-wide'
+  // pagina de mesaje ocupă toată lățimea și înălțimea disponibilă, cu caseta de scris jos
+  if (pathname.startsWith('/messages')) return 'page page-chat'
   return 'page'
 }
 
@@ -23,7 +25,8 @@ export default function Layout() {
 
   return (
     <NavigationProvider>
-      <div className="app">
+      {/* chat-open: pe telefon, conversația deschisă ocupă tot ecranul, ca în WhatsApp (vezi inbox.css) */}
+      <div className={`app${/^\/messages\/.+/.test(pathname) ? ' chat-open' : ''}`}>
         <Sidebar />
         <main className="content">
           <Header />

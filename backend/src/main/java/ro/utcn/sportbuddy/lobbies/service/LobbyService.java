@@ -663,6 +663,11 @@ public class LobbyService {
         return playedLobbyIds(userId);
     }
 
+    // Pentru căsuța de mesaje: lobby-urile date, în forma din liste (sport, teren, dată), ca să arate numele grupului.
+    public List<LobbySummary> summariesOf(java.util.Collection<Long> lobbyIds, Long userId) {
+        return lobbyRepository.findAllById(lobbyIds).stream().map(l -> toSummary(l, userId)).toList();
+    }
+
     // lobby-urile în care utilizatorul a jucat sau joacă (fără cei care au ieșit sau au lipsit)
     private Set<Long> playedLobbyIds(Long userId) {
         return lobbyPlayerRepository.findByUserIdAndStatusIn(userId, PLAYED).stream()
