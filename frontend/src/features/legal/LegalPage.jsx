@@ -1,14 +1,24 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import LanguageSwitch from '../../shared/LanguageSwitch'
+import { useI18n } from '../../shared/i18n/useI18n'
 import { PRIVACY, TERMS, UPDATED } from './legalContent'
+import * as en from './legalContentEn'
 import './legal.css'
 
-const PAGES = { terms: TERMS, privacy: PRIVACY }
+// Fiecare document e scris separat în fiecare limbă: ro în legalContent.js, en în legalContentEn.js.
+const CONTENT = {
+  ro: { terms: TERMS, privacy: PRIVACY, updated: UPDATED },
+  en: { terms: en.TERMS, privacy: en.PRIVACY, updated: en.UPDATED }
+}
 
 // Pagini publice (merg și fără cont): /termeni și /confidentialitate.
 export default function LegalPage({ page }) {
   const navigate = useNavigate()
-  const content = PAGES[page]
+  const { lang, t } = useI18n()
+  const texts = CONTENT[lang]
+  const content = texts[page]
+  const other = page === 'terms' ? texts.privacy : texts.terms
 
   useEffect(() => {
     document.title = `${content.title} · SportBuddy`
@@ -25,10 +35,13 @@ export default function LegalPage({ page }) {
   return (
     <div className="login-page">
       <article className="lg legal">
-        <button type="button" className="al legal-back" onClick={back}>‹ Înapoi</button>
+        <div className="legal-bar">
+          <button type="button" className="al legal-back" onClick={back}>‹ {t('Înapoi')}</button>
+          <LanguageSwitch />
+        </div>
         <div className="legal-head">
           <h1>{content.title}</h1>
-          <div className="mu">Ultima actualizare: {UPDATED}</div>
+          <div className="mu">{t('Ultima actualizare: {date}', { date: texts.updated })}</div>
         </div>
         <p>{content.intro}</p>
 
@@ -42,10 +55,8 @@ export default function LegalPage({ page }) {
         ))}
 
         <div className="legal-links">
-          <Link to={page === 'terms' ? '/confidentialitate' : '/termeni'}>
-            {page === 'terms' ? PRIVACY.title : TERMS.title}
-          </Link>
-          <Link to="/login">Conectare</Link>
+          <Link to={page === 'terms' ? '/confidentialitate' : '/termeni'}>{other.title}</Link>
+          <Link to="/login">{t('Conectare')}</Link>
         </div>
       </article>
     </div>

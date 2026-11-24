@@ -2,13 +2,23 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as authApi from '../../api/auth'
 import { clearToken, getToken, saveToken, SESSION_EXPIRED, TOKEN_KEY } from '../../api/session'
-import { getSettings } from '../../api/users'
+import { getSettings, updateSettings } from '../../api/users'
+import { getLang, setLang, takeLanguageChoice } from '../../shared/i18n'
+import { setCurrency } from '../../shared/i18n/money'
 import { applyTheme } from '../../shared/theme'
 import { AuthContext } from './useAuth'
 
-// Tema aleasă în setări se aplică la fiecare conectare, indiferent de dispozitiv.
-function loadTheme() {
-  getSettings().then((s) => applyTheme(s.theme)).catch(() => {})
+// Tema, limba și moneda alese în setări se aplică la fiecare conectare, indiferent de dispozitiv.
+// Excepție: limba aleasă chiar înainte de conectare (comutatorul de pe login) se salvează în cont.
+function loadSettings() {
+  getSettings()
+    .then((s) => {
+      applyTheme(s.theme)
+      if (takeLanguageChoice()) updateSettings({ ...s, language: getLang().toUpperCase() }).catch(() => {})
+      else setLang(s.language)
+      setCurrency(s.currency)
+    })
+    .catch(() => {})
 }
 
 export default function AuthProvider({ children }) {
@@ -27,7 +37,7 @@ export default function AuthProvider({ children }) {
         if (cancelled) return
         setUser(me)
         setStatus('authed')
-        loadTheme()
+        loadSettings()
       })
       .catch(() => {
         if (!cancelled) setStatus('guest')
@@ -71,7 +81,7 @@ export default function AuthProvider({ children }) {
     setExpiredUserId(null)
     setUser(res.user)
     setStatus('authed')
-    loadTheme()
+    loadSettings()
   }
 
   // Ieșire voită: login-ul de după nu trebuie să ducă pe pagina celui care a ieșit.

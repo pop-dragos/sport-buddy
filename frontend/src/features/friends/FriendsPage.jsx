@@ -3,6 +3,7 @@ import {
   acceptRequest, cancelRequest, getFriends, getRequests, getSuggestions, rejectRequest, sendRequest
 } from '../../api/friends'
 import { errorMessage } from '../../api/http'
+import { useT } from '../../shared/i18n/useI18n'
 import { useCatalog } from '../profile/useCatalog'
 import FriendRow from './FriendRow'
 import MessagesModal from './MessagesModal'
@@ -13,6 +14,7 @@ function normalize(s) {
 }
 
 export default function FriendsPage() {
+  const t = useT()
   const { sports } = useCatalog()
   const [friends, setFriends] = useState(null)
   const [requests, setRequests] = useState({ incoming: [], outgoing: [] })
@@ -51,7 +53,7 @@ export default function FriendsPage() {
     setBusy(false)
   }
 
-  const sportNames = useMemo(() => Object.fromEntries(sports.map((s) => [s.code, s.name])), [sports])
+  const sportNames = useMemo(() => Object.fromEntries(sports.map((s) => [s.code, t(s.name)])), [sports, t])
 
   const q = normalize(query)
   const shown = (friends ?? []).filter(
@@ -62,7 +64,7 @@ export default function FriendsPage() {
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
       <input
-        placeholder="Caută printre prieteni"
+        placeholder={t('Caută printre prieteni')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         style={{ marginBottom: 12 }}
@@ -72,22 +74,22 @@ export default function FriendsPage() {
 
       {hasRequests && (
         <div className="card">
-          <b>Cereri de prietenie</b>
+          <b>{t('Cereri de prietenie')}</b>
           {requests.incoming.map((r) => (
             <FriendRow key={r.requestId} friend={r.user} sportNames={sportNames}>
               <button type="button" className="b" disabled={busy} onClick={() => run(() => acceptRequest(r.requestId))}>
-                Acceptă
+                {t('Acceptă')}
               </button>
               <button type="button" className="b o" disabled={busy} onClick={() => run(() => rejectRequest(r.requestId))}>
-                Refuză
+                {t('Refuză')}
               </button>
             </FriendRow>
           ))}
           {requests.outgoing.map((r) => (
             <FriendRow key={r.requestId} friend={r.user} sportNames={sportNames}>
-              <span className="tag">Cerere trimisă</span>
+              <span className="tag">{t('Cerere trimisă')}</span>
               <button type="button" className="b o" disabled={busy} onClick={() => run(() => cancelRequest(r.requestId))}>
-                Anulează
+                {t('Anulează')}
               </button>
             </FriendRow>
           ))}
@@ -95,28 +97,28 @@ export default function FriendsPage() {
       )}
 
       <div className="card">
-        <b>Prieteni ({friends?.length ?? 0})</b>
-        {friends === null && !error && <div className="mu" style={{ marginTop: 6 }}>Se încarcă...</div>}
+        <b>{t('Prieteni')} ({friends?.length ?? 0})</b>
+        {friends === null && !error && <div className="mu" style={{ marginTop: 6 }}>{t('Se încarcă...')}</div>}
         {friends !== null && shown.length === 0 && (
           <div className="mu" style={{ marginTop: 6 }}>
-            {friends.length === 0 ? 'Nu ai încă prieteni.' : 'Niciun rezultat.'}
+            {friends.length === 0 ? t('Nu ai încă prieteni.') : t('Niciun rezultat.')}
           </div>
         )}
         {shown.map((f) => (
           <FriendRow key={f.userId} friend={f} sportNames={sportNames}>
-            <button type="button" className="b o" onClick={() => setChatWith(f)}>Mesaj</button>
+            <button type="button" className="b o" onClick={() => setChatWith(f)}>{t('Mesaj')}</button>
           </FriendRow>
         ))}
       </div>
 
       <div className="card">
-        <b>Posibili cunoscuți</b>
-        <div className="mu">Jucători din lobby-urile tale și cu sporturi comune</div>
-        {suggestions.length === 0 && <div className="mu">Nimeni momentan.</div>}
+        <b>{t('Posibili cunoscuți')}</b>
+        <div className="mu">{t('Jucători din lobby-urile tale și cu sporturi comune')}</div>
+        {suggestions.length === 0 && <div className="mu">{t('Nimeni momentan.')}</div>}
         {suggestions.map((s) => (
           <FriendRow key={s.userId} friend={s} sportNames={sportNames}>
             <button type="button" className="b o" disabled={busy} onClick={() => run(() => sendRequest(s.userId))}>
-              Adaugă
+              {t('Adaugă')}
             </button>
           </FriendRow>
         ))}

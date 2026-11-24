@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../features/auth/useAuth'
 import Avatar from '../shared/Avatar'
+import { useT } from '../shared/i18n/useI18n'
 
 // Iconițe liniare, ca în restul aplicației (brief: fără emoji; SVG 18 × 18, contur 1,8).
 const ICONS = {
@@ -40,6 +41,7 @@ const itemStyle = { display: 'flex', alignItems: 'center', gap: 10 }
 export default function UserMenu({ variant = 'sidebar', open: controlledOpen, onToggle, active = false }) {
   const [localOpen, setLocalOpen] = useState(false)
   const { user, logout } = useAuth()
+  const t = useT()
   const menuRef = useRef(null)
   const controlled = typeof controlledOpen === 'boolean'
   const showPop = controlled ? controlledOpen : localOpen
@@ -70,15 +72,15 @@ export default function UserMenu({ variant = 'sidebar', open: controlledOpen, on
   return (
     <div ref={menuRef} className={`um${variant === 'bottom' ? ' bottom-user-menu' : ''}`}>
       {showPop && (
-        <div id="pop" role="menu" aria-label="Meniu profil">
+        <div id="pop" role="menu" aria-label={t('Meniu profil')}>
           <Link to={`/profile/${user.id}`} role="menuitem" style={itemStyle} onClick={() => setShowPop(false)}>
-            <MenuIcon name="profile" />Profilul meu
+            <MenuIcon name="profile" />{t('Profilul meu')}
           </Link>
           <Link to="/settings" role="menuitem" style={itemStyle} onClick={() => setShowPop(false)}>
-            <MenuIcon name="settings" />Setări
+            <MenuIcon name="settings" />{t('Setări')}
           </Link>
           <button role="menuitem" style={itemStyle} onClick={() => { setShowPop(false); logout() }}>
-            <MenuIcon name="logout" />Ieși din cont
+            <MenuIcon name="logout" />{t('Ieși din cont')}
           </button>
         </div>
       )}
@@ -87,17 +89,17 @@ export default function UserMenu({ variant = 'sidebar', open: controlledOpen, on
         <button
           type="button"
           className={`bottom-nav-item${active || showPop ? ' active' : ''}`}
-          aria-label="Profil"
+          aria-label={t('Profil')}
           aria-haspopup="menu"
           aria-expanded={showPop}
           aria-current={active ? 'page' : undefined}
           onClick={() => setShowPop(!showPop)}
         >
           <MenuIcon name="profile" className="bottom-nav-icon" />
-          <span>Profil</span>
+          <span>{t('Profil')}</span>
         </button>
       ) : (
-        <button className="si" aria-label="Meniu profil" aria-expanded={showPop} onClick={() => setShowPop(!showPop)}>
+        <button className="si" aria-label={t('Meniu profil')} aria-expanded={showPop} onClick={() => setShowPop(!showPop)}>
           <Avatar name={user.fullName} url={user.avatarUrl} />
           <span className="nm">{user.username}</span>
         </button>

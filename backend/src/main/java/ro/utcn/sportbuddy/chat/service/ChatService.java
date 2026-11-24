@@ -6,6 +6,8 @@ import ro.utcn.sportbuddy.chat.dto.ChatMessageDto;
 import ro.utcn.sportbuddy.chat.model.LobbyMessage;
 import ro.utcn.sportbuddy.chat.repository.LobbyMessageRepository;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.i18n.Messages;
+import ro.utcn.sportbuddy.common.i18n.RequestLanguage;
 import ro.utcn.sportbuddy.lobbies.service.LobbyService;
 import ro.utcn.sportbuddy.users.service.UserService;
 
@@ -82,7 +84,8 @@ public class ChatService {
                 m.isSystem() ? "SYSTEM" : "USER",
                 m.isSystem() ? null : m.getSenderId(),
                 username,
-                m.getText(),
+                // mesajele de sistem se salvează în română; la citire se traduc după limba cererii
+                m.isSystem() ? Messages.translate(m.getText(), RequestLanguage.current()) : m.getText(),
                 LocalDateTime.ofInstant(m.getSentAt(), ZONE));
     }
 }

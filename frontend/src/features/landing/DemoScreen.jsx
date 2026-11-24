@@ -3,11 +3,13 @@ import AppWindow from './AppWindow'
 import DemoCalendar from './DemoCalendar'
 import DemoHome from './DemoHome'
 import DemoLobby from './DemoLobby'
+import { useT } from '../../shared/i18n/useI18n'
 import { reached } from './demoData'
 
 // Ce se vede în fereastră la un anumit pas: Acasă, apoi calendarul peste ea, apoi pagina lobby-ului.
 // progress: progresul scroll-ului (sau o valoare fixă în varianta statică); still: fără animații de intrare.
 export default function DemoScreen({ phase, progress, fluid = false, still = false }) {
+  const t = useT()
   const onLobby = reached(phase, 'lobby')
   // „Fotbal" apăsat în bara laterală chiar înainte să se deschidă calendarul
   const press = useTransform(progress, [0.05, 0.08, 0.12, 0.16], [0, 1, 1, 0])
@@ -15,7 +17,7 @@ export default function DemoScreen({ phase, progress, fluid = false, still = fal
 
   return (
     <AppWindow
-      pageTitle={onLobby ? 'Lobby' : 'Acasă'}
+      pageTitle={onLobby ? t('Lobby') : t('Acasă')}
       homeActive={!onLobby}
       pressFootball={fluid ? null : press}
       overlay={calendar}

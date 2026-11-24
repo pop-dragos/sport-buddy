@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { errorMessage } from '../../api/http'
+import { useT } from '../../shared/i18n/useI18n'
 import { useCooldown } from './useCooldown'
 
 // Serverul trimite cel mult un email pe minut pentru un cont, așa că butonul așteaptă la fel.
@@ -7,6 +8,7 @@ const RESEND_SECONDS = 60
 
 // „Verifică-ți emailul”: după crearea contului sau după cererea de resetare a parolei.
 export default function CheckEmail({ email, children, onResend, mailConfigured }) {
+  const t = useT()
   const [left, restart] = useCooldown(RESEND_SECONDS, true)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -16,7 +18,7 @@ export default function CheckEmail({ email, children, onResend, mailConfigured }
     setError('')
     try {
       await onResend()
-      setMessage('Am retrimis emailul.')
+      setMessage(t('Am retrimis emailul.'))
       restart()
     } catch (err) {
       setError(errorMessage(err))
@@ -35,14 +37,14 @@ export default function CheckEmail({ email, children, onResend, mailConfigured }
         {children}
         {email && <> <b className="ce-mail">{email}</b>.</>}
       </p>
-      <p className="mu">Nu găsești emailul? Uită-te și în dosarul Spam sau Promoții.</p>
+      <p className="mu">{t('Nu găsești emailul? Uită-te și în dosarul Spam sau Promoții.')}</p>
       {mailConfigured === false && (
         <div className="note">
-          Serverul nu are emailul configurat încă: linkul apare în consola backend-ului.
+          {t('Serverul nu are emailul configurat încă: linkul apare în consola backend-ului.')}
         </div>
       )}
       <button type="button" className="b o" disabled={left > 0} onClick={resend}>
-        {left > 0 ? `Retrimite emailul (${left} s)` : 'Retrimite emailul'}
+        {left > 0 ? t('Retrimite emailul ({n} s)', { n: left }) : t('Retrimite emailul')}
       </button>
       {message && <div className="mu">{message}</div>}
       {error && <div className="err">{error}</div>}

@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom'
 import Avatar from '../../shared/Avatar'
+import { useT } from '../../shared/i18n/useI18n'
 import { formatRating } from './format'
 
 export default function TopPlayersCard({ players }) {
+    const t = useT()
     return (
         <div className="card">
-            <div className="mu home-title">Top jucători</div>
-            {players.length === 0 && <div className="mu">Apar după primele review-uri.</div>}
+            <div className="mu home-title">{t('Top jucători')}</div>
+            {players.length === 0 && <div className="mu">{t('Apar după primele review-uri.')}</div>}
             {players.map((p, i) => (
                 <div key={p.userId} className="pl home-player-row">
                     <Link to={`/profile/${p.userId}`} className="home-player">

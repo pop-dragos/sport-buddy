@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getDashboard } from '../../api/dashboard'
 import { getSettings } from '../../api/users'
 import Skeleton from '../../shared/Skeleton'
+import { useT } from '../../shared/i18n/useI18n'
 import { useAuth } from '../auth/useAuth'
 import { useCity } from '../catalog/useCity'
 import Feed from '../feed/Feed'
@@ -15,6 +16,7 @@ import './home.css'
 
 export default function HomePage() {
     const { user } = useAuth()
+    const t = useT()
     const { city } = useCity()
     // null = se încarcă (apar scheletele), false = n-a putut fi încărcat
     const [dashboard, setDashboard] = useState(null)
@@ -43,7 +45,7 @@ export default function HomePage() {
     return (
         <div className="home-cols">
             <div>
-                <h3 className="home-greeting">Bună, {firstName}</h3>
+                <h3 className="home-greeting">{t('Bună, {name}', { name: firstName })}</h3>
                 <ProfileCompletionCard completion={user.profileCompletion} />
 
                 {dashboard === null && (

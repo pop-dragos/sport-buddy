@@ -532,6 +532,34 @@ main,
   font-weight: 600;
 }
 
+/* comutatorul RO | EN din colțul cardurilor de conectare, al paginilor legale și al celei de prezentare */
+.lg-top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -6px;
+}
+
+.langsw {
+  display: inline-flex;
+  border: 1px solid var(--bd);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.langsw button {
+  background: none;
+  border: 0;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mu);
+}
+
+.langsw button.on {
+  background: var(--ac);
+  color: var(--at);
+}
+
 .pw {
   position: relative;
 }
@@ -614,6 +642,12 @@ input[aria-invalid="true"] {
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 13px;
+}
+
+/* explicația de sub o alegere din Setări (de exemplu moneda) */
+.settings-hint {
+  font-size: 12px;
+  padding: 6px 0 10px;
 }
 
 /* bara de putere a parolei: patru segmente care se colorează pe rând */

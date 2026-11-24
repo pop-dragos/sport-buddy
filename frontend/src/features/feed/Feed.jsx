@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getFeed } from '../../api/feed'
 import { errorMessage } from '../../api/http'
 import SportIcon from '../../shared/SportIcon'
+import { useT } from '../../shared/i18n/useI18n'
 import { useCatalog } from '../profile/useCatalog'
 import PostCard from './PostCard'
 import PostComposer from './PostComposer'
@@ -10,6 +11,7 @@ import './feed.css'
 const PAGE_SIZE = 20
 
 function FeedList({ sportId, sports }) {
+  const t = useT()
   const [posts, setPosts] = useState([])
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
@@ -42,7 +44,7 @@ function FeedList({ sportId, sports }) {
     setPage((p) => p + 1)
   }
 
-  const sportName = (id) => sports.find((s) => s.id === id)?.name ?? ''
+  const sportName = (id) => t(sports.find((s) => s.id === id)?.name ?? '')
 
   return (
     <>
@@ -54,14 +56,14 @@ function FeedList({ sportId, sports }) {
 
       {error && <div className="card err">{error}</div>}
       {!loading && !error && posts.length === 0 && (
-        <div className="card mu">Nu există încă postări aici.</div>
+        <div className="card mu">{t('Nu există încă postări aici.')}</div>
       )}
 
       {posts.map((p) => <PostCard key={p.id} post={p} sportName={sportName(p.sportId)} />)}
 
       {hasMore && (
         <button type="button" className="b o" disabled={loading} onClick={loadMore} style={{ width: '100%' }}>
-          Încarcă mai multe
+          {t('Încarcă mai multe')}
         </button>
       )}
     </>
@@ -69,15 +71,16 @@ function FeedList({ sportId, sports }) {
 }
 
 export default function Feed() {
+  const t = useT()
   const { sports } = useCatalog()
   const [sportId, setSportId] = useState(null)
 
   return (
     <div>
-      <h3 className="feed-title">Comunitate</h3>
+      <h3 className="feed-title">{t('Comunitate')}</h3>
       <div className="r feed-chips">
         <button type="button" className={`chip ${sportId === null ? 'on' : ''}`} onClick={() => setSportId(null)}>
-          Toate
+          {t('Toate')}
         </button>
         {sports.map((s) => (
           <button
@@ -87,7 +90,7 @@ export default function Feed() {
             onClick={() => setSportId(s.id)}
           >
             <SportIcon type={s.code} />
-            {s.name}
+            {t(s.name)}
           </button>
         ))}
       </div>

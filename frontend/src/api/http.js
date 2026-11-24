@@ -1,9 +1,10 @@
+import { getLang, tr } from '../shared/i18n'
 import { getToken, clearToken, SESSION_EXPIRED } from './session'
 
 export class ApiError extends Error {
   constructor(status, body) {
     const firstField = body.fields && Object.values(body.fields)[0]
-    super(firstField || body.message || `Eroare ${status}`)
+    super(firstField || body.message || tr('Eroare {status}', { status }))
     this.status = status
     this.code = body.code
     this.fields = body.fields
@@ -21,6 +22,8 @@ export async function http(path, options = {}) {
     headers: {
       ...(!isForm && { 'Content-Type': 'application/json' }),
       ...(token && { Authorization: `Bearer ${token}` }),
+      // serverul traduce mesajele de eroare și emailurile în limba aleasă în aplicație
+      'Accept-Language': getLang(),
       ...options.headers
     },
   })
@@ -38,5 +41,5 @@ export async function http(path, options = {}) {
 }
 
 export function errorMessage(e) {
-  return e instanceof ApiError ? e.message : 'Nu mă pot conecta la server.'
+  return e instanceof ApiError ? e.message : tr('Nu mă pot conecta la server.')
 }

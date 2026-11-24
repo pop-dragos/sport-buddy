@@ -2,19 +2,21 @@ import { useState } from 'react'
 import { forgotPassword } from '../../api/auth'
 import { errorMessage } from '../../api/http'
 import { cancelEmailChange, resendEmailChange, updateMe, updateSports } from '../../api/users'
+import { useI18n } from '../../shared/i18n/useI18n'
 import { useAuth } from '../auth/useAuth'
 import { useCooldown } from '../auth/useCooldown'
 import AvatarField from './AvatarField'
 import ChangeEmailModal from './ChangeEmailModal'
 import ChangePasswordModal from './ChangePasswordModal'
 import DeleteAccountModal from './DeleteAccountModal'
-import { LEVELS } from './levels'
+import { LEVELS, levelLabel } from './levels'
 
 const MIN_AGE = 16
 const MAX_AGE = 99
 
 export default function AccountSection({ sports, cities }) {
   const { user, updateUser } = useAuth()
+  const { t } = useI18n()
 
   const [fullName, setFullName] = useState(user.fullName)
   const [phone, setPhone] = useState(user.phone ?? '')
@@ -37,7 +39,7 @@ export default function AccountSection({ sports, cities }) {
     setPasswordNote('')
     try {
       await forgotPassword(user.email)
-      setPasswordNote(`Ți-am trimis pe ${user.email} un link pentru setarea parolei.`)
+      setPasswordNote(t('Ți-am trimis pe {email} un link pentru setarea parolei.', { email: user.email }))
     } catch (e) {
       setPasswordNote(errorMessage(e))
     }
@@ -47,7 +49,7 @@ export default function AccountSection({ sports, cities }) {
     setEmailNote('')
     try {
       await resendEmailChange()
-      setEmailNote('Am retrimis linkul de confirmare.')
+      setEmailNote(t('Am retrimis linkul de confirmare.'))
       restartResend()
     } catch (e) {
       setEmailNote(errorMessage(e))
@@ -66,7 +68,7 @@ export default function AccountSection({ sports, cities }) {
   async function save() {
     const years = Number(age)
     if (!fullName.trim() || !age || years < MIN_AGE || years > MAX_AGE) {
-      setMessage({ text: `Numele și vârsta (${MIN_AGE}–${MAX_AGE}) sunt obligatorii.`, error: true })
+      setMessage({ text: t('Numele și vârsta ({min}–{max}) sunt obligatorii.', { min: MIN_AGE, max: MAX_AGE }), error: true })
       return
     }
     setBusy(true)
@@ -77,7 +79,7 @@ export default function AccountSection({ sports, cities }) {
         fullName, phone, age: years, description,
         ...(cityId && { cityId: Number(cityId) })
       }))
-      setMessage({ text: 'Modificările au fost salvate.', error: false })
+      setMessage({ text: t('Modificările au fost salvate.'), error: false })
     } catch (e) {
       setMessage({ text: errorMessage(e), error: true })
     }
@@ -100,74 +102,74 @@ export default function AccountSection({ sports, cities }) {
     <>
       <div className="card">
         <div className="f">
-          <label>Nume afișat</label>
+          <label>{t('Nume afișat')}</label>
           <input value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </div>
         <div className="f">
-          <label>Email</label>
+          <label>{t('Email')}</label>
           <div className="r" style={{ flexWrap: 'nowrap' }}>
-            <input type="email" value={user.email} readOnly aria-label="Email" />
-            <button type="button" className="b o" onClick={() => setModal('email')}>Schimbă</button>
+            <input type="email" value={user.email} readOnly aria-label={t('Email')} />
+            <button type="button" className="b o" onClick={() => setModal('email')}>{t('Schimbă')}</button>
           </div>
           {user.pendingEmail && (
             <div className="note" role="status">
-              Așteaptă confirmarea la <b className="ce-mail">{user.pendingEmail}</b>. Deschide linkul trimis acolo;
-              până atunci, contul rămâne pe adresa de mai sus.
+              {t('Așteaptă confirmarea la')} <b className="ce-mail">{user.pendingEmail}</b>
+              {t('. Deschide linkul trimis acolo; până atunci, contul rămâne pe adresa de mai sus.')}
               <div className="r" style={{ marginTop: 8 }}>
                 <button type="button" className="b o" disabled={resendLeft > 0} onClick={resendEmail}>
-                  {resendLeft > 0 ? `Retrimite (${resendLeft} s)` : 'Retrimite linkul'}
+                  {resendLeft > 0 ? t('Retrimite ({n} s)', { n: resendLeft }) : t('Retrimite linkul')}
                 </button>
-                <button type="button" className="b o" onClick={cancelEmail}>Anulează schimbarea</button>
+                <button type="button" className="b o" onClick={cancelEmail}>{t('Anulează schimbarea')}</button>
               </div>
             </div>
           )}
           {emailNote && <span className="mu">{emailNote}</span>}
         </div>
         <div className="f">
-          <label>Telefon</label>
-          <input type="tel" placeholder="07xx xxx xxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <label>{t('Telefon')}</label>
+          <input type="tel" placeholder={t('07xx xxx xxx')} value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
         <div className="f">
-          <label>Vârstă *</label>
+          <label>{t('Vârstă *')}</label>
           <input type="number" min={MIN_AGE} max={MAX_AGE} value={age} onChange={(e) => setAge(e.target.value)} />
         </div>
         <AvatarField />
         <div className="f">
-          <label>Oraș implicit</label>
+          <label>{t('Oraș implicit')}</label>
           <select value={cityId} onChange={(e) => setCityId(e.target.value)}>
-            {!cityId && <option value="">Alege orașul</option>}
+            {!cityId && <option value="">{t('Alege orașul')}</option>}
             {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div className="f">
-          <label>Descriere</label>
+          <label>{t('Descriere')}</label>
           <textarea
             rows={3}
             maxLength={300}
-            placeholder="Câteva cuvinte despre tine"
+            placeholder={t('Câteva cuvinte despre tine')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
         <div className="r">
-          <button type="button" className="b" disabled={busy} onClick={save}>Salvează</button>
+          <button type="button" className="b" disabled={busy} onClick={save}>{t('Salvează')}</button>
           {message.text && <span className={message.error ? 'err' : 'mu'}>{message.text}</span>}
         </div>
       </div>
 
       <div className="card">
-        <b>Sporturi și nivel</b>
+        <b>{t('Sporturi și nivel')}</b>
         <div className="mu" style={{ marginBottom: 6 }}>
-          Nivelul declarat se vede până primești primele review-uri.
+          {t('Nivelul declarat se vede până primești primele review-uri.')}
         </div>
         {sports.map((sport) => {
           const current = user.sports.find((s) => s.sportId === sport.id)?.level ?? ''
           return (
             <div className="pl" key={sport.id}>
-              <span>{sport.name}</span>
+              <span>{t(sport.name)}</span>
               <select style={{ width: 'auto' }} value={current} onChange={(e) => changeLevel(sport.id, e.target.value)}>
-                <option value="">Nu joc</option>
-                {LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                <option value="">{t('Nu joc')}</option>
+                {LEVELS.map((l) => <option key={l.value} value={l.value}>{levelLabel(l.value)}</option>)}
               </select>
             </div>
           )
@@ -177,26 +179,26 @@ export default function AccountSection({ sports, cities }) {
 
       <div className="card">
         <div className="pl">
-          <span>Parolă</span>
+          <span>{t('Parolă')}</span>
           <span className="r">
             {passwordNote && <span className="mu">{passwordNote}</span>}
             {user.hasPassword === false ? (
-              <button type="button" className="b o" onClick={sendSetPasswordLink}>Setează o parolă</button>
+              <button type="button" className="b o" onClick={sendSetPasswordLink}>{t('Setează o parolă')}</button>
             ) : (
-              <button type="button" className="b o" onClick={() => setModal('password')}>Schimbă parola</button>
+              <button type="button" className="b o" onClick={() => setModal('password')}>{t('Schimbă parola')}</button>
             )}
           </span>
         </div>
         <div className="pl">
-          <span>Contul</span>
-          <button type="button" className="b o" onClick={() => setModal('delete')}>Șterge contul</button>
+          <span>{t('Contul')}</span>
+          <button type="button" className="b o" onClick={() => setModal('delete')}>{t('Șterge contul')}</button>
         </div>
       </div>
 
       {modal === 'password' && (
         <ChangePasswordModal
           onClose={() => setModal(null)}
-          onDone={() => { setModal(null); setPasswordNote('Parola a fost schimbată. Celelalte dispozitive au fost deconectate.') }}
+          onDone={() => { setModal(null); setPasswordNote(t('Parola a fost schimbată. Celelalte dispozitive au fost deconectate.')) }}
         />
       )}
       {modal === 'email' && (

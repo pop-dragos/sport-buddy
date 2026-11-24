@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { errorMessage } from '../../api/http'
 import { getPendingReviews, submitReviews } from '../../api/ratings'
+import { useT } from '../../shared/i18n/useI18n'
 import './ratings.css'
 
 const STARS = [1, 2, 3, 4, 5]
@@ -8,6 +9,7 @@ const STARS = [1, 2, 3, 4, 5]
 // Cardul „Review colegi de meci" din pagina lobby-ului, după meci (ca în prototip).
 // Notele se trimit o singură dată, deci butonul se activează abia când toți colegii au o notă.
 export default function ReviewCard({ lobbyId, onSubmitted }) {
+    const t = useT()
     const [pending, setPending] = useState(null)
     const [scores, setScores] = useState({})
     const [sent, setSent] = useState(false)
@@ -41,11 +43,11 @@ export default function ReviewCard({ lobbyId, onSubmitted }) {
 
     return (
         <div className="card">
-            <b>Review colegi de meci</b>
-            <div className="mu review-hint">Notează de la 1 la 5 cum a jucat fiecare.</div>
+            <b>{t('Review colegi de meci')}</b>
+            <div className="mu review-hint">{t('Notează de la 1 la 5 cum a jucat fiecare.')}</div>
 
-            {sent && <div className="tag">Review trimis, mulțumim.</div>}
-            {!sent && pending?.length === 0 && <div className="mu">Nu mai ai pe nimeni de notat la acest meci.</div>}
+            {sent && <div className="tag">{t('Review trimis, mulțumim.')}</div>}
+            {!sent && pending?.length === 0 && <div className="mu">{t('Nu mai ai pe nimeni de notat la acest meci.')}</div>}
 
             {!sent && pending?.map((p) => (
                 <div key={p.userId} className="pl review-row">
@@ -55,7 +57,7 @@ export default function ReviewCard({ lobbyId, onSubmitted }) {
                             <button
                                 key={n}
                                 className={`star${(scores[p.userId] || 0) >= n ? ' on' : ''}`}
-                                title={`${n} din 5`}
+                                title={t('{n} din 5', { n })}
                                 onClick={() => setScores({ ...scores, [p.userId]: n })}
                             >
                                 ★
@@ -67,7 +69,7 @@ export default function ReviewCard({ lobbyId, onSubmitted }) {
 
             {!sent && pending?.length > 0 && (
                 <button className="b review-send" disabled={!allRated || busy} onClick={submit}>
-                    Trimite review-urile
+                    {t('Trimite review-urile')}
                 </button>
             )}
             {error && <div className="err review-hint">{error}</div>}

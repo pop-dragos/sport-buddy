@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { errorMessage } from '../../api/http'
 import { getSettings, updateSettings } from '../../api/users'
+import { setLang } from '../../shared/i18n'
+import { setCurrency } from '../../shared/i18n/money'
 import { applyTheme } from '../../shared/theme'
 
 export function useSettings() {
@@ -24,6 +26,9 @@ export function useSettings() {
       const saved = await updateSettings({ ...settings, ...patch })
       setSettings(saved)
       if (patch.theme) applyTheme(saved.theme)
+      // limba și moneda se aplică imediat în toată aplicația
+      if (patch.language) setLang(saved.language)
+      if (patch.currency) setCurrency(saved.currency)
     } catch (e) {
       setSettings(previous)
       setError(errorMessage(e))

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import LanguageSwitch from '../../shared/LanguageSwitch'
+import { useT } from '../../shared/i18n/useI18n'
 import HeroText from './HeroText'
 import Highlights from './Highlights'
 import RevealText from './RevealText'
@@ -18,6 +20,7 @@ import './landing.css'
 // deschidere mare, povestea în laptop legată de scroll, o frază care se aprinde, „Pe scurt" și finalul.
 // Merge fără cont și fără backend (date din demoData.js).
 export default function LandingPage() {
+  const t = useT()
   const { mode, reduced } = useStoryMode()
   const animate = !reduced
   const goToStory = () => showStory(animate)
@@ -27,12 +30,13 @@ export default function LandingPage() {
       <nav className="landing-nav" aria-label="SportBuddy">
         <Link to="/bun-venit" className="landing-logo"><b>S</b>portBuddy</Link>
         <div className="landing-nav-links">
-          <button type="button" onClick={goToStory}>Cum funcționează</button>
-          <a href="#pe-scurt">Pe scurt</a>
+          <button type="button" onClick={goToStory}>{t('Cum funcționează')}</button>
+          <a href="#pe-scurt">{t('Pe scurt')}</a>
         </div>
         <div className="landing-nav-actions">
-          <Link to="/login" className="landing-nav-login">Conectează-te</Link>
-          <Link to="/login" state={{ mode: 'up' }} className="pill small">Creează cont</Link>
+          <LanguageSwitch />
+          <Link to="/login" className="landing-nav-login">{t('Conectează-te')}</Link>
+          <Link to="/login" state={{ mode: 'up' }} className="pill small">{t('Creează cont')}</Link>
         </div>
       </nav>
 
@@ -53,22 +57,22 @@ export default function LandingPage() {
         <Highlights animate={animate} />
 
         <section className="landing-cta" aria-labelledby="cta-titlu">
-          <h2 id="cta-titlu">Următorul meci te așteaptă.</h2>
-          <p>Contul e gratuit. Alegi orașul și sportul, iar restul îl vezi direct în calendar.</p>
+          <h2 id="cta-titlu">{t('Următorul meci te așteaptă.')}</h2>
+          <p>{t('Contul e gratuit. Alegi orașul și sportul, iar restul îl vezi direct în calendar.')}</p>
           <div className="hero-actions">
-            <Link to="/login" state={{ mode: 'up' }} className="pill">Creează cont</Link>
-            <Link to="/login" className="text-link">Am deja cont <span aria-hidden="true">›</span></Link>
+            <Link to="/login" state={{ mode: 'up' }} className="pill">{t('Creează cont')}</Link>
+            <Link to="/login" className="text-link">{t('Am deja cont')} <span aria-hidden="true">›</span></Link>
           </div>
         </section>
       </div>
 
       <footer className="landing-footer">
-        <span>SportBuddy · proiect la Ingineria Software, UTCN</span>
+        <span>{t('SportBuddy · proiect la Ingineria Software, UTCN')}</span>
         <span className="landing-footer-links">
-          <Link to="/login">Conectează-te</Link>
-          <Link to="/login" state={{ mode: 'up' }}>Creează cont</Link>
-          <Link to="/termeni">Termeni</Link>
-          <Link to="/confidentialitate">Confidențialitate</Link>
+          <Link to="/login">{t('Conectează-te')}</Link>
+          <Link to="/login" state={{ mode: 'up' }}>{t('Creează cont')}</Link>
+          <Link to="/termeni">{t('Termeni')}</Link>
+          <Link to="/confidentialitate">{t('Confidențialitate')}</Link>
         </span>
       </footer>
     </div>

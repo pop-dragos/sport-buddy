@@ -1,8 +1,9 @@
 import { motion, useScroll, useTransform } from 'motion/react'
 import { useRef } from 'react'
+import { tx } from '../../shared/i18n'
+import { useT } from '../../shared/i18n/useI18n'
 
-const TEXT = 'Fără grupuri de mesaje, fără calcule pe hârtie, fără surprize la teren. '
-  + 'Vezi cine joacă, cât costă și când se confirmă meciul.'
+const TEXT = tx('Fără grupuri de mesaje, fără calcule pe hârtie, fără surprize la teren. Vezi cine joacă, cât costă și când se confirmă meciul.')
 
 // Un cuvânt se „aprinde" (din gri în culoarea textului) când scroll-ul trece de el.
 function Word({ word, index, total, progress }) {
@@ -12,9 +13,10 @@ function Word({ word, index, total, progress }) {
 }
 
 function RevealOnScroll() {
+  const t = useT()
   const ref = useRef(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
-  const words = TEXT.split(' ')
+  const words = t(TEXT).split(' ')
 
   return (
     <section ref={ref} className="reveal">
@@ -31,10 +33,11 @@ function RevealOnScroll() {
 
 // Fraza mare dintre poveste și „Pe scurt". Pe ecrane mici și cu reduce motion apare direct, întreagă.
 export default function RevealText({ animate }) {
+  const t = useT()
   if (!animate) {
     return (
       <section className="reveal still">
-        <p className="reveal-text">{TEXT}</p>
+        <p className="reveal-text">{t(TEXT)}</p>
       </section>
     )
   }

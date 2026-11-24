@@ -1,5 +1,6 @@
 package ro.utcn.sportbuddy.common.security;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import ro.utcn.sportbuddy.common.i18n.Language;
+import ro.utcn.sportbuddy.common.i18n.Messages;
 import ro.utcn.sportbuddy.users.service.UserService;
 
 import java.io.IOException;
@@ -39,9 +42,9 @@ public class SecurityConfig {
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e
                 .authenticationEntryPoint((req, res, ex) ->
-                    writeError(res, 401, "UNAUTHORIZED", "Autentificare necesară."))
+                    writeError(req, res, 401, "UNAUTHORIZED", "Autentificare necesară."))
                 .accessDeniedHandler((req, res, ex) ->
-                    writeError(res, 403, "FORBIDDEN", "Nu ai dreptul la această acțiune.")));
+                    writeError(req, res, 403, "FORBIDDEN", "Nu ai dreptul la această acțiune.")));
 
         http.addFilterBefore(new JwtAuthFilter(jwtService, userService), UsernamePasswordAuthenticationFilter.class);
         if (env.acceptsProfiles(Profiles.of("dev"))) {
@@ -50,10 +53,11 @@ public class SecurityConfig {
         return http.build();
     }
 
-    private static void writeError(HttpServletResponse res, int status, String code, String message)
-            throws IOException {
+    private static void writeError(HttpServletRequest req, HttpServletResponse res, int status, String code,
+                                   String message) throws IOException {
         res.setStatus(status);
         res.setContentType("application/json;charset=UTF-8");
-        res.getWriter().write("{\"code\":\"" + code + "\",\"message\":\"" + message + "\"}");
+        String text = Messages.translate(message, Language.of(req));
+        res.getWriter().write("{\"code\":\"" + code + "\",\"message\":\"" + text + "\"}");
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import ro.utcn.sportbuddy.catalog.service.CatalogService;
 import ro.utcn.sportbuddy.common.error.ApiException;
+import ro.utcn.sportbuddy.common.i18n.RequestLanguage;
 import ro.utcn.sportbuddy.common.security.PasswordPolicy;
 import ro.utcn.sportbuddy.users.dto.*;
 import ro.utcn.sportbuddy.users.model.*;
@@ -210,7 +211,10 @@ public class UserService {
         userRepository.save(u);
         chosenSports.forEach((sportId, level) ->
                 userSportRepository.save(new UserSport(u.getId(), sportId, level)));
-        userSettingsRepository.save(new UserSettings(u.getId()));
+        // contul nou pornește în limba în care s-a înregistrat
+        UserSettings settings = new UserSettings(u.getId());
+        settings.setLanguage(RequestLanguage.current());
+        userSettingsRepository.save(settings);
         return u.getId();
     }
 
@@ -435,6 +439,8 @@ public class UserService {
         s.setProfileVisibility(dto.profileVisibility());
         s.setWhoCanAddMe(dto.whoCanAddMe());
         s.setShowFriendList(dto.showFriendsList());
+        if (dto.language() != null) s.setLanguage(dto.language());
+        if (dto.currency() != null) s.setCurrency(dto.currency());
         return toDto(s);
     }
 
@@ -485,7 +491,8 @@ public class UserService {
     private static UserSettingsDto toDto(UserSettings s) {
         return new UserSettingsDto(s.getTheme(), s.isShowWeather(), s.isNotifJoinRequests(),
                 s.isNotifMessages(), s.isNotifReminders(), s.isNotifEmailDigest(),
-                s.getProfileVisibility(), s.getWhoCanAddMe(), s.isShowFriendList());
+                s.getProfileVisibility(), s.getWhoCanAddMe(), s.isShowFriendList(),
+                s.getLanguage(), s.getCurrency());
     }
 
     private List<SportLevelDto> sportsOf(Long userId) {

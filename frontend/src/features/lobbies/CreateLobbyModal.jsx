@@ -4,6 +4,9 @@ import { getFields, getSports } from '../../api/catalog'
 import { errorMessage } from '../../api/http'
 import { createLobby } from '../../api/lobbies'
 import Modal from '../../shared/Modal'
+import { trField } from '../../shared/i18n'
+import { useT } from '../../shared/i18n/useI18n'
+import { useMoney } from '../../shared/i18n/money'
 import { useCity } from '../catalog/useCity'
 import { dayKey } from './dates'
 
@@ -22,6 +25,8 @@ function startDay(initialDate) {
 export default function CreateLobbyModal({ initialSport, initialDate, onClose }) {
   const { cities, city } = useCity()
   const navigate = useNavigate()
+  const t = useT()
+  const { currency, money } = useMoney()
 
   const [sports, setSports] = useState([])
   const [fields, setFields] = useState([])
@@ -93,29 +98,29 @@ export default function CreateLobbyModal({ initialSport, initialDate, onClose })
   }
 
   return (
-    <Modal title="Creează lobby" onClose={onClose}>
+    <Modal title={t('Creează lobby')} onClose={onClose}>
       <form onSubmit={submit}>
         <div className="f">
-          <label>Sport</label>
+          <label>{t('Sport')}</label>
           <select value={sportId ?? ''} onChange={(e) => changeSport(Number(e.target.value))}>
-            {sports.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {sports.map((s) => <option key={s.id} value={s.id}>{t(s.name)}</option>)}
           </select>
         </div>
 
         <div className="f">
-          <label>Oraș</label>
+          <label>{t('Oraș')}</label>
           <select value={cityId ?? ''} onChange={(e) => setForm((f) => ({ ...f, cityId: Number(e.target.value), fieldId: null }))}>
             {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
 
         <div className="f">
-          <label>Data</label>
+          <label>{t('Data')}</label>
           <input type="date" min={minDate} value={form.date} onChange={(e) => set('date', e.target.value)} required />
         </div>
 
         <div className="f">
-          <label>Ora (0–23)</label>
+          <label>{t('Ora (0–23)')}</label>
           <div className="r">
             <select value={form.hour} onChange={(e) => set('hour', e.target.value)}>
               {HOURS.map((h) => <option key={h}>{h}</option>)}
@@ -128,42 +133,44 @@ export default function CreateLobbyModal({ initialSport, initialDate, onClose })
         </div>
 
         <div className="f">
-          <label>Teren</label>
+          <label>{t('Teren')}</label>
           <select value={fieldId ?? ''} onChange={(e) => set('fieldId', Number(e.target.value))}>
-            {fields.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            {fields.map((f) => <option key={f.id} value={f.id}>{trField(f.name)}</option>)}
           </select>
-          {cities.length === 0 && <div className="mu">Se încarcă orașele...</div>}
-          {cities.length > 0 && fields.length === 0 && <div className="mu">Nu există terenuri pentru acest sport în orașul ales.</div>}
+          {cities.length === 0 && <div className="mu">{t('Se încarcă orașele...')}</div>}
+          {cities.length > 0 && fields.length === 0 && <div className="mu">{t('Nu există terenuri pentru acest sport în orașul ales.')}</div>}
         </div>
 
         <div className="f">
-          <label>Număr jucători</label>
+          <label>{t('Număr jucători')}</label>
           <input type="number" min="2" max="50" value={form.maxPlayers} onChange={(e) => set('maxPlayers', e.target.value)} required />
         </div>
 
         <div className="f">
-          <label>Costul terenului (RON, 0 = gratuit)</label>
+          <label>{t('Costul terenului (RON, 0 = gratuit)')}</label>
           <input type="number" min="0" value={form.fieldCost} onChange={(e) => set('fieldCost', e.target.value)} required />
+          {/* suma se introduce în RON; în altă monedă arătăm cam cât înseamnă */}
+          {currency !== 'RON' && Number(form.fieldCost) > 0 && <div className="mu">{money(Number(form.fieldCost))}</div>}
         </div>
 
         <div className="f">
-          <label>Număr minim de jucători</label>
+          <label>{t('Număr minim de jucători')}</label>
           <input type="number" min="2" value={form.minPlayers} onChange={(e) => set('minPlayers', e.target.value)} required />
         </div>
 
         <div className="f">
-          <label>Câți jucători sunt deja (cu tine)</label>
+          <label>{t('Câți jucători sunt deja (cu tine)')}</label>
           <input type="number" min="1" value={form.alreadyPlaying} onChange={(e) => set('alreadyPlaying', e.target.value)} required />
-          <div className="mu">Ceilalți din grup nu au nevoie de cont. Căutăm doar completarea locurilor.</div>
+          <div className="mu">{t('Ceilalți din grup nu au nevoie de cont. Căutăm doar completarea locurilor.')}</div>
         </div>
 
         {error && <div className="err">{error}</div>}
 
         <div className="r lobby-actions">
           <button className="b" type="submit" disabled={saving || !fieldId}>
-            {saving ? 'Se creează...' : 'Creează lobby'}
+            {saving ? t('Se creează...') : t('Creează lobby')}
           </button>
-          <button className="b o" type="button" onClick={onClose}>Anulează</button>
+          <button className="b o" type="button" onClick={onClose}>{t('Anulează')}</button>
         </div>
       </form>
     </Modal>

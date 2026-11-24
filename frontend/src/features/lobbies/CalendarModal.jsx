@@ -2,17 +2,24 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCalendar, getLobbiesForDay } from '../../api/lobbies'
 import Modal from '../../shared/Modal'
+import { currentLocale, trField } from '../../shared/i18n'
+import { useT } from '../../shared/i18n/useI18n'
 import CreateLobbyModal from './CreateLobbyModal'
 import { useCity } from '../catalog/useCity'
 import { formatRating, formatTime } from '../home/format'
 import { dayKey, daysInMonth, leadingBlanks, monthKey } from './dates'
 import './lobbies.css'
 
-const WEEK_DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+// inițialele zilelor, luni primul, în limba curentă (2024-01-01 a fost luni)
+function weekDayInitials() {
+    return [0, 1, 2, 3, 4, 5, 6].map((i) =>
+        new Date(2024, 0, 1 + i).toLocaleDateString(currentLocale(), { weekday: 'narrow' }))
+}
 
 export default function CalendarModal({ sport, onClose }) {
     const { city } = useCity()
     const navigate = useNavigate()
+    const t = useT()
     // „azi" se citește o singură dată, când se deschide calendarul
     const [today] = useState(() => new Date())
     const [view, setView] = useState({ year: today.getFullYear(), month: today.getMonth() })
@@ -57,9 +64,9 @@ export default function CalendarModal({ sport, onClose }) {
     }
 
     const monthTitle = new Date(view.year, view.month, 1)
-        .toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' })
+        .toLocaleDateString(currentLocale(), { month: 'long', year: 'numeric' })
     const selectedTitle = new Date(selected + 'T00:00')
-        .toLocaleDateString('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' })
+        .toLocaleDateString(currentLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
 
     const cells = []
     for (let i = 0; i < leadingBlanks(view.year, view.month); i++) {
@@ -77,7 +84,7 @@ export default function CalendarModal({ sport, onClose }) {
     }
 
     return (
-        <Modal title={`${sport.name} în ${city?.name ?? '...'}: alege ziua`} onClose={onClose}>
+        <Modal title={t('{sport} în {city}: alege ziua', { sport: t(sport.name), city: city?.name ?? '...' })} onClose={onClose}>
             <div className="top calendar-month-nav">
                 <button className="b o" onClick={() => changeMonth(-1)}>‹</button>
                 <b>{monthTitle}</b>
@@ -85,32 +92,32 @@ export default function CalendarModal({ sport, onClose }) {
             </div>
 
             <div className="cal">
-                {WEEK_DAYS.map((w, i) => <span key={i}>{w}</span>)}
+                {weekDayInitials().map((w, i) => <span key={i}>{w}</span>)}
                 {cells}
             </div>
 
             <b>{selectedTitle}</b>
-            {lobbies === null && <div className="mu lobby-empty">Se încarcă...</div>}
+            {lobbies === null && <div className="mu lobby-empty">{t('Se încarcă...')}</div>}
             {lobbies?.length === 0 && (
                 <>
-                    <div className="mu lobby-empty">Niciun lobby în ziua asta.</div>
-                    <button className="b" onClick={() => setCreating(true)}>Creează unul</button>
+                    <div className="mu lobby-empty">{t('Niciun lobby în ziua asta.')}</div>
+                    <button className="b" onClick={() => setCreating(true)}>{t('Creează unul')}</button>
                 </>
             )}
             {lobbies?.map((l) => (
                 <div key={l.id} className="pl">
                     <div>
-                        {formatTime(l.dateTime)} · {l.fieldName}
+                        {formatTime(l.dateTime)} · {trField(l.fieldName)}
                         <div className="mu">
-                            {l.currentPlayers}/{l.maxPlayers} · liber: {l.freeSlots} · nivel {formatRating(l.averageRating)}
+                            {l.currentPlayers}/{l.maxPlayers} · {t('liber: {n}', { n: l.freeSlots })} · {t('nivel {n}', { n: formatRating(l.averageRating) })}
                         </div>
                     </div>
-                    <button className="b o" onClick={() => open(l.id)}>Vezi</button>
+                    <button className="b o" onClick={() => open(l.id)}>{t('Vezi')}</button>
                 </div>
             ))}
 
             <div className="lobby-actions">
-                <button className="b o" onClick={onClose}>Închide</button>
+                <button className="b o" onClick={onClose}>{t('Închide')}</button>
             </div>
         </Modal>
     )

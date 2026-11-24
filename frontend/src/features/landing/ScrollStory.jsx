@@ -5,6 +5,7 @@ import HeroText from './HeroText'
 import Laptop from './Laptop'
 import RichText from './RichText'
 import { INTRO, phaseAt, STAGES } from './demoData'
+import { useT } from '../../shared/i18n/useI18n'
 import { showStory } from './storyNav'
 
 // Laptopul e desenat la o mărime fixă (fereastra de 1200×780, rama ecranului și baza mai lată)
@@ -41,6 +42,7 @@ const toRaw = (x) => INTRO + x * (1 - INTRO)
 // Titlul și textul unei etape: apar și dispar la granițele ei, cu o suprapunere scurtă.
 // Pragurile rămân între 0 și 1: motion leagă animația direct de scroll-ul browserului.
 function StageTitle({ stage, index, progress }) {
+  const t = useT()
   const [from, to] = stage.range
   const first = index === 0
   const last = index === STAGES.length - 1
@@ -54,7 +56,7 @@ function StageTitle({ stage, index, progress }) {
 
   return (
     <motion.div className="story-stage" style={{ opacity, y }}>
-      <h2 className="story-title">{stage.title}</h2>
+      <h2 className="story-title">{t(stage.title)}</h2>
       <RichText parts={stage.text} className="story-text" />
     </motion.div>
   )
@@ -72,6 +74,7 @@ function StageDot({ stage, index, progress }) {
 }
 
 export default function ScrollStory() {
+  const t = useT()
   const sectionRef = useRef(null)
   const heroRef = useRef(null)
   const titlesRef = useRef(null)
@@ -103,7 +106,7 @@ export default function ScrollStory() {
   const dotsOpacity = useTransform(scrollYProgress, [INTRO - 0.03, INTRO], [0, 1])
 
   return (
-    <section ref={sectionRef} className="story" id="cum-functioneaza" aria-label="Cum funcționează SportBuddy">
+    <section ref={sectionRef} className="story" id="cum-functioneaza" aria-label={t('Cum funcționează SportBuddy')}>
       <div className="story-sticky">
         {/* exteriorul urmează scroll-ul; interiorul are doar intrarea de la încărcarea paginii */}
         <motion.div ref={heroRef} className="story-hero" style={{ opacity: heroOpacity, y: heroY, pointerEvents: heroEvents }}>

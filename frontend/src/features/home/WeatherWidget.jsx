@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { getWeather } from '../../api/weather'
+import { currentLocale, tr } from '../../shared/i18n'
+import { useT } from '../../shared/i18n/useI18n'
 import WeatherIcon from './WeatherIcon'
 import './weather.css'
 
 function dayLabel(dateStr, index) {
-    if (index === 0) return 'Azi'
-    return new Date(dateStr + 'T00:00').toLocaleDateString('ro-RO', { weekday: 'short' })
+    if (index === 0) return tr('Azi')
+    return new Date(dateStr + 'T00:00').toLocaleDateString(currentLocale(), { weekday: 'short' })
 }
 
 export default function WeatherWidget({ cityId, cityName }) {
+    const t = useT()
     const [data, setData] = useState(null)
     const [error, setError] = useState(false)
 
@@ -32,9 +35,9 @@ export default function WeatherWidget({ cityId, cityName }) {
 
     return (
         <div className="card">
-            <div className="mu">Vremea în {cityName}</div>
+            <div className="mu">{t('Vremea în {name}', { name: cityName })}</div>
 
-            {error && <div className="mu">Prognoza nu este disponibilă acum.</div>}
+            {error && <div className="mu">{t('Prognoza nu este disponibilă acum.')}</div>}
             {!error && !data && <><div className="sk" /><div className="sk" /></>}
 
             {data && (

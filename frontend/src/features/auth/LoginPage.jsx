@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { resendVerification } from '../../api/auth'
 import { errorMessage } from '../../api/http'
+import { useT } from '../../shared/i18n/useI18n'
 import { useAuth } from './useAuth'
 import { useAuthConfig } from './useAuthConfig'
 import { useCooldown } from './useCooldown'
@@ -44,6 +45,7 @@ export default function LoginPage() {
   const { status, user, login, loginWithProvider, loginWithGoogle } = useAuth()
   const location = useLocation()
   const config = useAuthConfig()
+  const t = useT()
 
   // „Creează cont" de pe pagina de prezentare deschide direct formularul de cont nou
   const [mode, setMode] = useState(() => (location.state?.mode === 'up' ? 'up' : 'in'))
@@ -79,7 +81,7 @@ export default function LoginPage() {
     setInfo('')
     setUnverified(false)
     if (!identifier.trim() || !password) {
-      setError('Completează utilizatorul și parola.')
+      setError(t('Completează utilizatorul și parola.'))
       return
     }
     setBusy(true)
@@ -102,7 +104,7 @@ export default function LoginPage() {
     setError('')
     try {
       await resendVerification(identifier.trim())
-      setInfo('Am retrimis emailul de confirmare.')
+      setInfo(t('Am retrimis emailul de confirmare.'))
       restartResend()
     } catch (err) {
       setError(errorMessage(err))
@@ -143,16 +145,16 @@ export default function LoginPage() {
 
   if (sentTo) {
     return (
-      <AuthCard title="Verifică-ți emailul">
+      <AuthCard title={t('Verifică-ți emailul')}>
         <CheckEmail
           email={sentTo}
           mailConfigured={config?.mailConfigured}
           onResend={() => resendVerification(sentTo)}
         >
-          Contul a fost creat. Ca să-l activezi, deschide linkul pe care ți l-am trimis la
+          {t('Contul a fost creat. Ca să-l activezi, deschide linkul pe care ți l-am trimis la')}
         </CheckEmail>
         <div style={{ textAlign: 'center' }}>
-          <button type="button" className="al" onClick={() => switchMode('in')}>Înapoi la conectare</button>
+          <button type="button" className="al" onClick={() => switchMode('in')}>{t('Înapoi la conectare')}</button>
         </div>
       </AuthCard>
     )
@@ -168,26 +170,26 @@ export default function LoginPage() {
 
   return (
     <AuthCard
-      title={mode === 'in' ? 'Conectează-te la SportBuddy' : socialSignup ? 'Termină-ți contul' : 'Creează-ți contul'}
+      title={mode === 'in' ? t('Conectează-te la SportBuddy') : socialSignup ? t('Termină-ți contul') : t('Creează-ți contul')}
       onSubmit={mode === 'in' ? submit : (e) => e.preventDefault()}
     >
       {mode === 'in' ? (
         <>
           <div>
-            <div className="lb2">Utilizator sau email</div>
+            <div className="lb2">{t('Utilizator sau email')}</div>
             <input
               style={{ marginTop: 6 }}
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               autoComplete="username"
-              aria-label="Utilizator sau email"
+              aria-label={t('Utilizator sau email')}
             />
           </div>
 
           <div>
-            <div className="lb2">Parolă</div>
+            <div className="lb2">{t('Parolă')}</div>
             <div style={{ marginTop: 6 }}>
-              <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" label="Parolă" />
+              <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" label={t('Parolă')} />
             </div>
             <div style={{ textAlign: 'right', marginTop: 6 }}>
               <Link
@@ -196,7 +198,7 @@ export default function LoginPage() {
                 className="al"
                 style={{ textDecoration: 'none' }}
               >
-                Ai uitat parola?
+                {t('Ai uitat parola?')}
               </Link>
             </div>
           </div>
@@ -208,32 +210,32 @@ export default function LoginPage() {
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
             />
-            Ține-mă minte
+            {t('Ține-mă minte')}
           </label>
 
           {error && <div className="mu err" role="alert">{error}</div>}
           {unverified && (
             <button type="button" className="b o" disabled={resendLeft > 0} onClick={resend}>
-              {resendLeft > 0 ? `Retrimite emailul de confirmare (${resendLeft} s)` : 'Retrimite emailul de confirmare'}
+              {resendLeft > 0 ? t('Retrimite emailul de confirmare ({n} s)', { n: resendLeft }) : t('Retrimite emailul de confirmare')}
             </button>
           )}
           {info && <div className="note" role="status">{info}</div>}
 
-          <button type="submit" className="b" disabled={busy}>Conectează-te</button>
+          <button type="submit" className="b" disabled={busy}>{t('Conectează-te')}</button>
 
           <div className="mu">
-            Prin conectare accepți <Link to="/termeni" className="al">Termenii de utilizare</Link> și{' '}
-            <Link to="/confidentialitate" className="al">Politica de confidențialitate</Link>.
+            {t('Prin conectare accepți')} <Link to="/termeni" className="al">{t('Termenii de utilizare')}</Link>{' '}
+            {t('și')} <Link to="/confidentialitate" className="al">{t('Politica de confidențialitate')}</Link>.
           </div>
           <div style={{ textAlign: 'center' }}>
-            Nu ai cont încă?{' '}
-            <button type="button" className="al" onClick={() => switchMode('up')}>Creează cont</button>
+            {t('Nu ai cont încă?')}{' '}
+            <button type="button" className="al" onClick={() => switchMode('up')}>{t('Creează cont')}</button>
           </div>
 
-          <SocialButtons label="sau conectează-te cu" googleText="signin_with" {...socialProps} />
+          <SocialButtons label={t('sau conectează-te cu')} googleText="signin_with" {...socialProps} />
 
           <div style={{ textAlign: 'center' }}>
-            <Link to="/bun-venit" className="al" style={{ textDecoration: 'none' }}>Vezi cum funcționează</Link>
+            <Link to="/bun-venit" className="al" style={{ textDecoration: 'none' }}>{t('Vezi cum funcționează')}</Link>
           </div>
         </>
       ) : (
@@ -241,14 +243,14 @@ export default function LoginPage() {
           <SignupForm key={socialSignup?.email ?? 'local'} social={socialSignup} onVerificationSent={setSentTo} />
 
           <div style={{ textAlign: 'center' }}>
-            Ai deja cont?{' '}
-            <button type="button" className="al" onClick={() => switchMode('in')}>Conectează-te</button>
+            {t('Ai deja cont?')}{' '}
+            <button type="button" className="al" onClick={() => switchMode('in')}>{t('Conectează-te')}</button>
           </div>
 
           {!socialSignup && (
             <>
               {error && <div className="mu err" role="alert">{error}</div>}
-              <SocialButtons label="sau creează cont cu" googleText="signup_with" {...socialProps} />
+              <SocialButtons label={t('sau creează cont cu')} googleText="signup_with" {...socialProps} />
             </>
           )}
         </>

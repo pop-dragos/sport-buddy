@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../../api/auth'
 import { errorMessage } from '../../api/http'
+import { useT } from '../../shared/i18n/useI18n'
 import AuthCard from './AuthCard'
 import NewPasswordFields from './NewPasswordFields'
 import { passwordProblem } from './passwordRules'
@@ -11,6 +12,7 @@ export default function ResetPasswordPage() {
   const [params] = useSearchParams()
   const token = params.get('token')
   const navigate = useNavigate()
+  const t = useT()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
@@ -22,7 +24,7 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     const problem = passwordProblem(password)
     if (problem) return setError(problem)
-    if (confirm !== password) return setError('Parolele nu coincid.')
+    if (confirm !== password) return setError(t('Parolele nu coincid.'))
     setBusy(true)
     setError('')
     try {
@@ -37,15 +39,15 @@ export default function ResetPasswordPage() {
 
   if (linkInvalid) {
     return (
-      <AuthCard title="Link expirat">
+      <AuthCard title={t('Link expirat')}>
         <p className="mu" style={{ margin: 0, textAlign: 'center' }}>
-          {error || 'Linkul de resetare nu este complet.'} Linkurile de resetare sunt valabile o oră și merg o singură dată.
+          {error || t('Linkul de resetare nu este complet.')} {t('Linkurile de resetare sunt valabile o oră și merg o singură dată.')}
         </p>
         <Link to="/forgot-password" className="b" style={{ textAlign: 'center', textDecoration: 'none' }}>
-          Cere un link nou
+          {t('Cere un link nou')}
         </Link>
         <div style={{ textAlign: 'center' }}>
-          <Link to="/login" className="al" style={{ textDecoration: 'none' }}>Înapoi la conectare</Link>
+          <Link to="/login" className="al" style={{ textDecoration: 'none' }}>{t('Înapoi la conectare')}</Link>
         </div>
       </AuthCard>
     )
@@ -53,8 +55,8 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthCard
-      title="Alege o parolă nouă"
-      subtitle="După schimbare vei fi deconectat de pe celelalte dispozitive."
+      title={t('Alege o parolă nouă')}
+      subtitle={t('După schimbare vei fi deconectat de pe celelalte dispozitive.')}
       onSubmit={submit}
     >
       <NewPasswordFields
@@ -62,11 +64,11 @@ export default function ResetPasswordPage() {
         confirm={confirm}
         onPassword={setPassword}
         onConfirm={setConfirm}
-        labels={{ password: 'Parola nouă', confirm: 'Confirmă parola nouă' }}
+        labels={{ password: t('Parola nouă'), confirm: t('Confirmă parola nouă') }}
         autoFocus
       />
       {error && <div className="err" role="alert">{error}</div>}
-      <button type="submit" className="b" disabled={busy}>Schimbă parola</button>
+      <button type="submit" className="b" disabled={busy}>{t('Schimbă parola')}</button>
     </AuthCard>
   )
 }

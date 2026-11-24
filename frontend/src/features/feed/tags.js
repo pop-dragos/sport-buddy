@@ -1,10 +1,13 @@
+import { tr } from '../../shared/i18n'
+
 // Ordinea din selectul de postare nouă, ca în prototip
 export const TAGS = [
-  { value: 'DISCUSSION', label: 'Discuție' },
-  { value: 'LOOKING_FOR_PLAYERS', label: 'Căutăm jucători' },
-  { value: 'TOURNAMENT', label: 'Turneu' }
+  { value: 'DISCUSSION' },
+  { value: 'LOOKING_FOR_PLAYERS' },
+  { value: 'TOURNAMENT' }
 ]
 
 export function tagLabel(value) {
-  return TAGS.find((t) => t.value === value)?.label ?? value
+  const labels = { DISCUSSION: tr('Discuție'), LOOKING_FOR_PLAYERS: tr('Căutăm jucători'), TOURNAMENT: tr('Turneu') }
+  return labels[value] ?? value
 }

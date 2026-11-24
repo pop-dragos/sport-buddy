@@ -2,37 +2,41 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMyLobbies } from '../../api/lobbies'
 import Skeleton from '../../shared/Skeleton'
+import { trField } from '../../shared/i18n'
+import { useI18n } from '../../shared/i18n/useI18n'
 import { formatDay, formatTime } from '../home/format'
 import './lobbies.css'
 
-const TABS = [
-  { key: 'UPCOMING', label: 'Viitoare' },
-  { key: 'CREATED', label: 'Create de mine' },
-  { key: 'REQUESTS', label: 'Cereri trimise' },
-  { key: 'FINISHED', label: 'Încheiate' }
-]
-
-const STATUS = { OPEN: 'Deschis', LOCKED: 'Confirmat', FINISHED: 'Încheiat', CANCELLED: 'Anulat' }
+const TAB_KEYS = ['UPCOMING', 'CREATED', 'REQUESTS', 'FINISHED']
 
 export default function AgendaPage() {
   const navigate = useNavigate()
+  const { t, tn } = useI18n()
   const [tab, setTab] = useState('UPCOMING')
   // listele tuturor taburilor, încărcate o dată, ca să afișăm și numărul de pe fiecare tab
   const [lists, setLists] = useState(null)
   const [error, setError] = useState(false)
 
+  const tabLabels = {
+    UPCOMING: t('Viitoare'),
+    CREATED: t('Create de mine'),
+    REQUESTS: t('Cereri trimise'),
+    FINISHED: t('Încheiate')
+  }
+  const statusLabels = { OPEN: t('Deschis'), LOCKED: t('Confirmat'), FINISHED: t('Încheiat'), CANCELLED: t('Anulat') }
+
   useEffect(() => {
     let cancelled = false
-    Promise.all(TABS.map((t) => getMyLobbies(t.key)))
+    Promise.all(TAB_KEYS.map((key) => getMyLobbies(key)))
       .then((results) => {
         if (cancelled) return
-        setLists(Object.fromEntries(TABS.map((t, i) => [t.key, results[i]])))
+        setLists(Object.fromEntries(TAB_KEYS.map((key, i) => [key, results[i]])))
       })
       .catch(() => { if (!cancelled) setError(true) })
     return () => { cancelled = true }
   }, [])
 
-  if (error) return <div className="lobby-page card">Agenda nu este disponibilă acum.</div>
+  if (error) return <div className="lobby-page card">{t('Agenda nu este disponibilă acum.')}</div>
   if (!lists) {
     return (
       <div className="lobby-page">
@@ -47,32 +51,32 @@ export default function AgendaPage() {
   return (
     <div className="lobby-page">
       <div className="r segmented agenda-tabs">
-        {TABS.map((t) => (
-          <button key={t.key} className={`chip ${tab === t.key ? 'on' : ''}`} onClick={() => setTab(t.key)}>
-            {t.label} ({lists[t.key].length})
+        {TAB_KEYS.map((key) => (
+          <button key={key} className={`chip ${tab === key ? 'on' : ''}`} onClick={() => setTab(key)}>
+            {tabLabels[key]} ({lists[key].length})
           </button>
         ))}
       </div>
 
-      {lobbies.length === 0 && <div className="card mu">Nu ai nimic în această listă.</div>}
+      {lobbies.length === 0 && <div className="card mu">{t('Nu ai nimic în această listă.')}</div>}
 
       {lobbies.map((l) => (
         <div key={l.id} className="card">
           <div className="top">
             <div>
-              <b>{l.sportName}</b>
-              <div className="mu">{l.fieldName}, {l.cityName}</div>
+              <b>{t(l.sportName)}</b>
+              <div className="mu">{trField(l.fieldName)}, {l.cityName}</div>
               <div className="mu lobby-small">
-                {formatDay(l.dateTime)}, {formatTime(l.dateTime)} · {l.currentPlayers} din {l.maxPlayers} jucători
+                {formatDay(l.dateTime)}, {formatTime(l.dateTime)} · {t('{a} din {b} jucători', { a: l.currentPlayers, b: l.maxPlayers })}
               </div>
             </div>
             <span className="r">
-              {l.isHost && <span className="tag">Organizator</span>}
+              {l.isHost && <span className="tag">{t('Organizator')}</span>}
               {l.pendingRequests > 0 && (
-                <span className="tag">{l.pendingRequests} {l.pendingRequests === 1 ? 'cerere' : 'cereri'}</span>
+                <span className="tag">{tn(l.pendingRequests, '{n} cerere', '{n} cereri')}</span>
               )}
-              {l.status !== 'OPEN' && <span className="tag">{STATUS[l.status]}</span>}
-              <button className="b o" onClick={() => navigate(`/lobbies/${l.id}`)}>Deschide</button>
+              {l.status !== 'OPEN' && <span className="tag">{statusLabels[l.status]}</span>}
+              <button className="b o" onClick={() => navigate(`/lobbies/${l.id}`)}>{t('Deschide')}</button>
             </span>
           </div>
         </div>

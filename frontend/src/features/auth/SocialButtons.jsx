@@ -1,3 +1,4 @@
+import { useT } from '../../shared/i18n/useI18n'
 import GoogleButton from './GoogleButton'
 
 const GoogleLogo = (
@@ -18,6 +19,7 @@ const AppleLogo = (
 // googleClientId: cu el, butonul Google e cel real; fără el (neconfigurat), conectarea Google e simulată.
 // onGoogleCredential primește token-ul dat de Google; onPick(provider) e pentru conectarea simulată.
 export default function SocialButtons({ label, onPick, onGoogleCredential, googleClientId, googleText, disabled }) {
+  const t = useT()
   return (
     <>
       <div className="sep">{label}</div>
@@ -25,11 +27,11 @@ export default function SocialButtons({ label, onPick, onGoogleCredential, googl
         <GoogleButton clientId={googleClientId} onCredential={onGoogleCredential} text={googleText} disabled={disabled} />
       ) : (
         <button type="button" className="soc" disabled={disabled} onClick={() => onPick('GOOGLE')}>
-          {GoogleLogo}Google <span className="sim">(simulat)</span>
+          {GoogleLogo}Google <span className="sim">({t('simulat')})</span>
         </button>
       )}
       <button type="button" className="soc" disabled={disabled} onClick={() => onPick('ICLOUD')}>
-        {AppleLogo}iCloud <span className="sim">(simulat)</span>
+        {AppleLogo}iCloud <span className="sim">({t('simulat')})</span>
       </button>
     </>
   )

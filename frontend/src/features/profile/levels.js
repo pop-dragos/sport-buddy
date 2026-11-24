@@ -1,9 +1,13 @@
+import { tr } from '../../shared/i18n'
+
+// Valorile vin din server (SportLevel); etichetele se traduc la afișare.
 export const LEVELS = [
-  { value: 'BEGINNER', label: 'Începător' },
-  { value: 'INTERMEDIATE', label: 'Mediu' },
-  { value: 'ADVANCED', label: 'Avansat' }
+  { value: 'BEGINNER' },
+  { value: 'INTERMEDIATE' },
+  { value: 'ADVANCED' }
 ]
 
 export function levelLabel(value) {
-  return LEVELS.find((l) => l.value === value)?.label ?? value
+  const labels = { BEGINNER: tr('Începător'), INTERMEDIATE: tr('Mediu'), ADVANCED: tr('Avansat') }
+  return labels[value] ?? value
 }
